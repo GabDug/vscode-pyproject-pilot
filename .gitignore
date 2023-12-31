@@ -1,0 +1,9 @@
+out
+node_modules.history
+.history
+node_modules
+*.vsix
+.DS_Store
+.pdm-python
+.venv
+.vscode-test
