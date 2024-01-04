@@ -1,0 +1,93 @@
+# [PDM Task Provider](https://marketplace.visualstudio.com/items?itemName=knowsuchagency.pdm-task-provider)
+
+[**Task**][tasks] provider for [**pdm**][pdm].
+
+
+
+## Features
+
+### Task Running
+
+This extension supports running pdm scripts defined in `pyproject.toml` files as [tasks](https://code.visualstudio.com/docs/editor/tasks). Scripts with the name 'build', 'compile', or 'watch'
+are treated as build tasks.
+
+To run scripts as tasks, use the **Tasks** menu.
+
+For more information about auto detection of Tasks, see the [documentation](https://code.visualstudio.com/Docs/editor/tasks#_task-autodetection).
+
+### Script Explorer
+
+The PDM Script Explorer shows the pdm scripts found in your workspace. The explorer view is enabled by the setting `pdm.enableScriptExplorer`. A script can be opened or ran, from the explorer.
+
+### Run Scripts from the Editor
+
+The extension supports to run the selected script as a task when editing the `pyproject.toml` file. You can either run a script from
+the hover shown on a script or using the command `Run Selected PDM Script`.
+
+### Run Scripts from a Folder in the Explorer
+
+The extension supports running a script as a task from a folder in the Explorer. The command  `Run PDM Script in Folder...` shown in the Explorer context menu finds all scripts in `pyproject.toml` files that are contained in this folder. You can then select the script to be executed as a task from the resulting list. You enable this support with the `pdm.runScriptFromFolder` which is `false` by default.
+
+## Settings
+
+- `pdm.autoDetect` - Enable detecting scripts as tasks, the default is `on`.
+- `pdm.runQuiet` - Run pdm script with the `--quiet` option, the default is `false`.
+- `pdm.packageManager` - The package manager used to run the scripts: `auto`, `npm`. The default is `auto`, which detects your package manager based on files in your workspace.
+- `pdm.exclude` - Glob patterns for folders that should be excluded from automatic script detection. The pattern is matched against the **absolute path** of the package.json. For example, to exclude all test folders use '&ast;&ast;/test/&ast;&ast;'.
+- `pdm.enableScriptExplorer` - Enable an explorer view for PDM scripts.
+- `pdm.scriptExplorerAction` - The default click action: `open` or `run`, the default is `open`.
+- `pdm.enableRunFromFolder` - Enable running PDM scripts from the context menu of folders in Explorer, the default is `false`.
+- `pdm.scriptCodeLens.enable` - Enable/disable the code lenses to run a script, the default is `false`.
+
+[pyproject.toml]
+```toml
+[tool.pdm.scripts]
+start_server = "flask run -p 54321"
+```
+
+### From Tasks Global Menu
+![](static/entrypoint.png)
+
+### Select PDM
+![](static/all_tasks.png)
+
+[pdm]: https://pdm.fming.dev
+[tasks]: https://code.visualstudio.com/docs/editor/tasks
+
+### Select Task from pyproject.toml
+![](static/pdm_tasks.png)
+
+<footer>
+<a href="https://iconscout.com/icons/python" target="_blank">Python Icon</a> on <a href="https://iconscout.com">Iconscout</a>
+</footer>
+
+## TODO
+
+- Clean README
+- Clean REPO
+- Add screenshots
+- Fix `Run script` codelens
+
+## Next steps
+
+- Expose `pdm` commands as tasks (install, update, build, ...)
+- Expose `project.scripts` as tasks
+- CodeLens on `plugins` to install them automatically
+- Setting for custom PDM interpreter path
+- Support `poethepoet` with Poetry?
+- Writing some tests?
+- Testing support for VS Code in browser?
+- Support for `help` arguments?
+- Cache tasks/`pyproject.toml` with [workspaceState](https://code.visualstudio.com/api/references/vscode-api#ExtensionContext.workspaceState)?
+
+## Recommended extensions
+
+- TOML for validation of pyproject.toml and pdm.toml files.
+
+
+## Credits
+
+This project is based on the [built-in VS Code NPM extension](https://github.com/microsoft/vscode/tree/main/extensions/npm), published by Microsoft, released under MIT license.
+
+Inspired by [PDM Task Provider VS Code Extensions by KnowSuchAgency](https://marketplace.visualstudio.com/items?itemName=knowsuchagency.pdm-task-provider).
+

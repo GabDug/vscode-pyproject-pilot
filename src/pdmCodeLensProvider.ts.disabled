@@ -1,0 +1,52 @@
+import { CodeLens, CodeLensProvider, Command, Position, Range, TextDocument } from 'vscode';
+
+export class PDMCodeLensProvider implements CodeLensProvider {
+	async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
+		console.error('provideCodeLenses');
+		const codeLenses: CodeLens[] = [];
+		const scriptsCodeLens = this._getScriptsCodeLens(document);
+		const pluginsCodeLens = this._getPluginsCodeLens(document);
+		codeLenses.push(scriptsCodeLens);
+		codeLenses.push(pluginsCodeLens);
+		return codeLenses;
+	}
+
+	private _getScriptsCodeLens(document: TextDocument) {
+		// XXX Get the position of `[tool.pdm.scripts]` from a toml library
+		const scriptsPosition = document.getText().indexOf('[tool.pdm.scripts]');
+		let range = document.getWordRangeAtPosition(new Position(scriptsPosition, 0));
+		if (!range) {
+			range = new Range(new Position(scriptsPosition, 0), new Position(scriptsPosition, 0));
+		}
+		// const range = new Range(0, 0, 0, 0);
+		console.error('range', range);
+		const c: Command = {
+			command: 'pdm.runScript',
+			// command: 'pdm-task-provider.runTask',
+			title: 'Run script...',
+			// arguments
+		};
+
+		const scriptsCodeLens = new CodeLens(range, c);
+		return scriptsCodeLens;
+	}
+
+	private _getPluginsCodeLens(document: TextDocument) {
+		const pluginsPosition = document.getText().indexOf('[tool.pdm]');
+		let range = document.getWordRangeAtPosition(new Position(pluginsPosition, 0));
+		if (!range) {
+			range = new Range(new Position(pluginsPosition, 0), new Position(pluginsPosition, 0));
+		}
+		// const range = new Range(0, 0, 0, 0);
+		console.error('range plugins', range);
+		const c: Command = {
+			command: 'npm.installPlugins',
+			// command: 'pdm-task-provider.runTask',
+			title: 'Install plugins...',
+			// arguments
+		};
+
+		const scriptsCodeLens = new CodeLens(range, c);
+		return scriptsCodeLens;
+	}
+  }

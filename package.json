@@ -1,0 +1,351 @@
+{
+	"name": "pdm",
+	"displayName": "PDM",
+	"description": "Task provider for PDM, a Python project manager.",
+	"version": "0.0.1",
+	"publisher": "gabdug",
+	"repository": "https://github.com/gabdug/pdm-task-provider",
+	"icon": "static/pdm_icon.png",
+	"engines": {
+		"vscode": "^1.45.0"
+	},
+	"license": "MIT",
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		"pdm",
+		"python",
+		"task provider",
+		"pyproject.toml"
+	],
+	"preview": true,
+	"pricing": "Free",
+	"main": "./out/extension",
+	"browser": "./dist/web/extension.js",
+	"activationEvents": [
+		"onTaskType:pdm",
+		"onCommand:workbench.action.tasks.runTask",
+		"onLanguage:toml",
+		"workspaceContains:pyproject.toml",
+		"workspaceContains:pdm.lock"
+	],
+	"capabilities": {
+		"virtualWorkspaces": {
+			"supported": "limited",
+			"description": "%virtualWorkspaces%"
+		},
+		"untrustedWorkspaces": {
+			"supported": "limited",
+			"description": "%workspaceTrust%"
+		}
+	},
+	"contributes": {
+		"views": {
+			"explorer": [
+				{
+					"id": "pdm",
+					"name": "PDM Scripts",
+					"when": "pdm:showScriptExplorer",
+					"icon": "$(toml)",
+					"visibility": "hidden",
+					"contextualTitle": "PDM scripts"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "pdm-task-provider.runTask",
+				"title": "Run PDM Task"
+			},
+			{
+				"command": "pdm.runScript",
+				"title": "Run script",
+				"icon": "$(run)"
+			},
+			{
+				"command": "pdm.debugScript",
+				"title": "Debug script",
+				"icon": "$(debug)"
+			},
+			{
+				"command": "pdm.openScript",
+				"title": "Go to script definition"
+			},
+			{
+				"command": "pdm.runInstall",
+				"title": "Install deps - pdm install"
+			},
+			{
+				"command": "pdm.refresh",
+				"title": "Reload pyproject.toml(s) and PDM scripts",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "pdm.runSelectedScript",
+				"title": "PDM Run Selected Script"
+			},
+			{
+				"command": "pdm.runScriptFromFolder",
+				"title": "PDM Run script from folder"
+			},
+			{
+				"command": "pdm.packageManager",
+				"title": "PDM package managers?"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "pdm.refresh",
+					"when": "false"
+				},
+				{
+					"command": "pdm.runScript",
+					"when": "false"
+				},
+				{
+					"command": "pdm.debugScript",
+					"when": "false"
+				},
+				{
+					"command": "pdm.openScript",
+					"when": "false"
+				},
+				{
+					"command": "pdm.runInstall",
+					"when": "false"
+				},
+				{
+					"command": "pdm.runSelectedScript",
+					"when": "false"
+				},
+				{
+					"command": "pdm.runScriptFromFolder",
+					"when": "false"
+				},
+				{
+					"command": "pdm.packageManager",
+					"when": "false"
+				}
+			],
+			"editor/context": [
+				{
+					"command": "pdm.runSelectedScript",
+					"when": "resourceFilename == 'pyproject.toml' && resourceScheme == file",
+					"group": "navigation@+1"
+				}
+			],
+			"view/title": [
+				{
+					"command": "pdm.refresh",
+					"when": "view == pdm",
+					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "pdm.openScript",
+					"when": "view == pdm && viewItem == pyprojectTOML",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pdm.runInstall",
+					"when": "view == pdm && viewItem == pyprojectTOML",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pdm.openScript",
+					"when": "view == pdm && viewItem == script",
+					"group": "navigation@1"
+				},
+				{
+					"command": "pdm.runScript",
+					"when": "view == pdm && viewItem == script",
+					"group": "navigation@2"
+				},
+				{
+					"command": "pdm.runScript",
+					"when": "view == pdm && viewItem == script",
+					"group": "inline"
+				}
+			],
+			"explorer/context": [
+				{
+					"when": "config.pdm.enableRunFromFolder && explorerViewletVisible && explorerResourceIsFolder && resourceScheme == file",
+					"command": "pdm.runScriptFromFolder",
+					"group": "2_workspace"
+				}
+			]
+		},
+		"configuration": {
+			"id": "pdm",
+			"type": "object",
+			"title": "PDM",
+			"properties": {
+				"pdm.autoDetect": {
+					"type": "string",
+					"enum": [
+						"off",
+						"on"
+					],
+					"default": "on",
+					"scope": "resource",
+					"description": "Controls whether PDM scripts should be automatically detected from your pyproject.toml files."
+				},
+				"pdm.runQuiet": {
+					"title": "Run Quiet",
+					"type": "boolean",
+					"default": false,
+					"scope": "resource",
+					"markdownDescription": "Run pdm commands with the `--quiet` option."
+				},
+				"pdm.packageManager": {
+					"scope": "resource",
+					"type": "string",
+					"enum": [
+						"auto",
+						"pdm"
+					],
+					"enumDescriptions": [
+						"%config.pdm.packageManager.auto%",
+						"%config.pdm.packageManager.pdm%"
+					],
+					"default": "auto",
+					"description": "%config.pdm.packageManager%"
+				},
+				"pdm.exclude": {
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"description": "Configure glob patterns for folders that should be excluded from automatic script detection.",
+					"scope": "resource"
+				},
+				"pdm.enableScriptExplorer": {
+					"type": "boolean",
+					"default": false,
+					"scope": "resource",
+					"deprecationMessage": "The PDM Script Explorer is now available in 'Views' menu in the Explorer in all folders.",
+					"description": "%config.pdm.enableScriptExplorer%"
+				},
+				"pdm.enableRunFromFolder": {
+					"type": "boolean",
+					"default": true,
+					"scope": "resource",
+					"description": "Enable running pdm scripts contained in a folder from the explorer context menu."
+				},
+				"pdm.scriptExplorerAction": {
+					"type": "string",
+					"enum": [
+						"open",
+						"run"
+					],
+					"markdownDescription": "The default click action used in the PDM Scripts Explorer: open or run, the default is open.",
+					"scope": "window",
+					"default": "open"
+				},
+				"pdm.scriptExplorerExclude": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"markdownDescription": "An array of regular expressions that indicate which scripts should be excluded from the PDM Scripts view.",
+					"scope": "resource",
+					"default": []
+				},
+				"pdm.scriptHover": {
+					"type": "boolean",
+					"description": "Display hover with `Run` command for scripts.",
+					"default": true,
+					"scope": "window"
+				},
+				"pdm.pdmPath": {
+					"type": "string",
+					"description": "FIXME UNUSED. The path to the PDM executable to use.",
+					"default": "pdm",
+					"scope": "resource",
+					"ignoreSync": "true"
+				}
+			}
+		},
+		"taskDefinitions": [
+			{
+				"type": "pdm",
+				"required": [
+					"task"
+				],
+				"properties": {
+					"task": {
+						"type": "string",
+						"description": "The PDM task to customize"
+					},
+					"file": {
+						"type": "string",
+						"description": "The PDM file that provides the task. Can be omitted."
+					}
+				}
+			}
+		]
+	},
+	"scripts": {
+		"_vscode:prepublish": "npm run compile",
+		"_compile": "tsc -b",
+		"_watch": "tsc -b -w",
+		"_esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+		"_esbuild": "npm run esbuild-base -- --sourcemap",
+		"_esbuild-browser": "npm run esbuild-base -- --sourcemap --target=chrome58,firefox57,safari11,edge16 --format=esm --outfile=out/browser.js",
+		"_esbuild-test": "npm run esbuild-base -- --sourcemap --target=chrome58 --format=esm --outfile=out/test/index.js",
+		"_esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+		"_test-compile": "tsc -p ./",
+		"_test": "vscode-test",
+		"_lint": "eslint src --ext ts",
+		"_test-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=.  --extensionTestsPath=dist/test/suite/index.js",
+		"_run-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
+		"test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/test/suite/index.js",
+		"pretest": "npm run compile-web",
+		"vscode:prepublish": "npm run package-web",
+		"compile-web": "webpack",
+		"watch-web": "webpack --watch",
+		"package-web": "webpack --mode production --devtool hidden-source-map",
+		"lint": "eslint src --ext ts",
+		"run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+	},
+	"devDependencies": {
+		"@types/eslint": "^8.56.0",
+		"@types/minimatch": "^5.1.2",
+		"@types/node": "^12.12.0",
+		"@types/vscode": "^1.45.0",
+		"@types/webpack-env": "^1.18.4",
+		"@typescript-eslint/eslint-plugin": "^3.0.2",
+		"@typescript-eslint/parser": "^3.0.2",
+		"@vscode/test-cli": "^0.0.4",
+		"@vscode/test-electron": "^2.3.8",
+		"@vscode/test-web": "^0.0.50",
+		"eslint": "^7.1.0",
+		"ts-loader": "^9.5.1",
+		"typescript": "^4.0.2",
+		"webpack": "^5.89.0",
+		"webpack-cli": "^5.1.4"
+	},
+	"dependencies": {
+		"toml-eslint-parser": "^0.9.3",
+		"minimatch": "^9.0.3",
+		"vscode-uri": "^3.0.8"
+	},
+	"__metadata": {
+		"id": "d033fef3-65c3-4a49-b04e-054fc1b60b66",
+		"publisherId": "9cb3eb27-fbd9-46ff-a0c3-d7782abbe605",
+		"publisherDisplayName": "GabDug",
+		"targetPlatform": "undefined",
+		"isApplicationScoped": false,
+		"updated": true,
+		"isPreReleaseVersion": true,
+		"installedTimestamp": 1703545911636,
+		"pinned": false,
+		"preRelease": true
+	}
+}
