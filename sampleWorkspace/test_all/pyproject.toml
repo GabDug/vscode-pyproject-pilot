@@ -1,0 +1,32 @@
+[tool.pdm.scripts]
+_.env_file = ".env"
+dev = "flask run -p 54321"
+dev_multiline = """
+    isort tox_pdm tests
+    black tox_pdm tests
+"""
+# # Cmd
+start = {cmd = "flask run -p 54321"}
+start_with_help = {cmd = "flask run -p 54321", help="Start the server"}
+start_list = {cmd = [
+    "flask",
+    "run",
+    # Important comment here about always using port 54321
+    "-p", "54321"
+]}
+start_as_obj.cmd = "flask run -p 54321"
+start_as_obj.env_file = ".env"
+
+# # Shell
+filter_error = {shell = "cat error.log|grep CRITICAL > critical.log"}
+filter_error_with_help = {shell = "cat error.log|grep CRITICAL > critical.log", help="Filter error log"}
+
+# # Call
+foobar = {call = "foo_package.bar_module:main"}
+foobar_args = {call = "foo_package.bar_module:main('dev')"}
+
+# Composite
+lint = "flake8"
+test = "pytest"
+all = {composite = ["lint", "test"]}
+all_args = {composite = ["lint mypackage/", "test -v tests/"]}

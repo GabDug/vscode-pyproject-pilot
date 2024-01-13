@@ -3,64 +3,113 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 import {
-	IFolderTaskItem,
-	detectPdmScriptsForFolder,
-	findScriptAtPosition,
-	runScript
-} from './tasks';
+  IFolderTaskItem,
+  ITaskWithLocation,
+  detectPdmScriptsForFolder,
+  findScriptAtPosition,
+  providePdmScriptsForPyprojectToml,
+  runScript,
+} from "./tasks";
 
 export function runSelectedScript(context: vscode.ExtensionContext) {
-	const editor = vscode.window.activeTextEditor;
-	if (!editor) {
-		return;
-	}
-	const document = editor.document;
-	const contents = document.getText();
-	const script = findScriptAtPosition(editor.document, contents, editor.selection.anchor);
-	if (script) {
-		runScript(context, script, document);
-	} else {
-		const message = "Could not find a valid pdm script at the selection.";
-		vscode.window.showErrorMessage(message);
-	}
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+  const document = editor.document;
+  const contents = document.getText();
+  const script = findScriptAtPosition(
+    editor.document,
+    contents,
+    editor.selection.anchor
+  );
+  if (script) {
+    runScript(context, script, document);
+  } else {
+    const message = "Could not find a valid PDM script at the selection.";
+    vscode.window.showErrorMessage(message);
+  }
 }
 
-export async function selectAndRunScriptFromFolder(context: vscode.ExtensionContext, selectedFolders: vscode.Uri[]) {
-	if (selectedFolders.length === 0) {
-		return;
-	}
-	const selectedFolder = selectedFolders[0];
+export async function selectAndRunScriptFromFile(
+  context: vscode.ExtensionContext,
+  selectedPath: vscode.Uri
+) {
+  const taskList: ITaskWithLocation[] = await providePdmScriptsForPyprojectToml(
+    context,
+    selectedPath,
+    true
+  );
 
-	const taskList: IFolderTaskItem[] = await detectPdmScriptsForFolder(context, selectedFolder);
+  const itemList: IFolderTaskItem[] = taskList.map((task) => {
+    return {
+      label: task.task.name,
+      task: task.task,
+      description: task?.script?.help,
+      iconPath: new vscode.ThemeIcon("wrench"),
+      //  detail: task?.script?.exec_type
+    };
+  });
 
-	if (taskList && taskList.length > 0) {
-		const quickPick = vscode.window.createQuickPick<IFolderTaskItem>();
-		quickPick.placeholder = 'Select a pdm script to run in folder';
-		quickPick.items = taskList;
+  await createTaskQuickList(itemList, selectedPath);
+}
+export async function selectAndRunScriptFromFolder(
+  context: vscode.ExtensionContext,
+  selectedFolders: vscode.Uri[] | vscode.Uri
+) {
+  // Debug to output (not popup)
+  if (!Array.isArray(selectedFolders)) {
+    selectedFolders = [selectedFolders];
+  }
+  if (selectedFolders?.length === 0) {
+    return;
+  }
+  const selectedFolder = selectedFolders[0];
 
-		const toDispose: vscode.Disposable[] = [];
+  const taskList: IFolderTaskItem[] = await detectPdmScriptsForFolder(
+    context,
+    selectedFolder
+  );
+  await createTaskQuickList(taskList, selectedFolder);
+}
+async function createTaskQuickList(
+  taskList: IFolderTaskItem[],
+  selectedPath: vscode.Uri
+) {
+  if (taskList && taskList.length > 0) {
+    const quickPick = vscode.window.createQuickPick<IFolderTaskItem>();
+    quickPick.placeholder = "Select a PDM script to run";
+    quickPick.items = taskList;
 
-		const pickPromise = new Promise<IFolderTaskItem | undefined>((c) => {
-			toDispose.push(quickPick.onDidAccept(() => {
-				toDispose.forEach(d => d.dispose());
-				c(quickPick.selectedItems[0]);
-			}));
-			toDispose.push(quickPick.onDidHide(() => {
-				toDispose.forEach(d => d.dispose());
-				c(undefined);
-			}));
-		});
-		quickPick.show();
-		const result = await pickPromise;
-		quickPick.dispose();
-		if (result) {
-			vscode.tasks.executeTask(result.task);
-		}
-	}
-	else {
-		vscode.window.showInformationMessage(`No pdm scripts found in ${selectedFolder.fsPath}`, { modal: true });
-	}
+    const toDispose: vscode.Disposable[] = [];
+
+    const pickPromise = new Promise<IFolderTaskItem | undefined>((c) => {
+      toDispose.push(
+        quickPick.onDidAccept(() => {
+          toDispose.forEach((d) => d.dispose());
+          c(quickPick.selectedItems[0]);
+        })
+      );
+      toDispose.push(
+        quickPick.onDidHide(() => {
+          toDispose.forEach((d) => d.dispose());
+          c(undefined);
+        })
+      );
+    });
+    quickPick.show();
+    const result = await pickPromise;
+    quickPick.dispose();
+    if (result) {
+      vscode.tasks.executeTask(result.task);
+    }
+  } else {
+    vscode.window.showInformationMessage(
+      `No pdm scripts found in ${selectedPath.fsPath}`,
+      { modal: true }
+    );
+  }
 }

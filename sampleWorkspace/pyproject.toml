@@ -7,21 +7,21 @@ plugins = ["sync-pre-commit-lock"]
 
 [tool.pdm.scripts]
 _.env_file = ".env"
-start_server = "flask run -p 54321"
+# start_server = "fastapi run -p 12345"
 start_server_with_help.shell = "flask run -p 54321 --help"
 start_server_with_help.help = "Starts the server with help"
 
-lint-pylint = {cmd="pylint --django-settings-module=firefighter.firefighter.settings src", help="Run pylint"}
-lint-pylint-strict = {shell="pylint --django-settings-module=firefighter.settings src --fail-under=0.99", help="Run pylint, fail if score is under 9.99"}
-lint-mypy = {shell= "mypy", help="Run mypy type checker", env={"ENABLE_PAGERDUTY"="True", "ENABLE_CONFLUENCE"="True"}}
-lint-ruff = {cmd="ruff .", help="Run ruff linter"}
-lint = {composite= ["lint-ruff", "lint-pylint", "lint-mypy"], help="Run all linters (ruff, pylint, mypy)."}
-foobar = {call = "foo_package.bar_module:main"}
-[tool.pdm.scripts.format]
-shell = """
-    isort tox_pdm tests
-    black tox_pdm tests
-"""
+# lint-pylint = {cmd="pylint --django-settings-module=firefighter.firefighter.settings src", help="Run pylint"}
+# lint-pylint-strict = {shell="pylint --django-settings-module=firefighter.settings src --fail-under=0.99", help="Run pylint, fail if score is under 9.99"}
+# lint-mypy = {shell= "mypy", help="Run mypy type checker", env={"ENABLE_PAGERDUTY"="True", "ENABLE_CONFLUENCE"="True"}}
+# lint-ruff = {cmd="ruff .", help="Run ruff linter"}
+# lint = {composite= ["lint-ruff", "lint-pylint", "lint-mypy"], help="Run all linters (ruff, pylint, mypy)."}
+# foobar = {call = "foo_package.bar_module:main"}
+# [tool.pdm.scripts.format]
+# shell = """
+#     isort tox_pdm tests
+#     black tox_pdm tests
+# """
 
 
 [tool.pdm.build]

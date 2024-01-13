@@ -1,13 +1,18 @@
 {
-	"compilerOptions": {
-		"module": "commonjs",
-		"target": "es2020",
-		"lib": ["ES2019"],
-		"outDir": "out",
-		"sourceMap": true,
-		"strict": true,
-		"rootDir": "src"
-	},
-	"include": ["src/*.ts"],
-	"exclude": ["node_modules", ".vscode-test"]
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020",
+    "lib": ["ES2020"],
+    "outDir": "out",
+    "sourceMap": true,
+    "strict": true,
+    "rootDir": "src"
+  },
+  "exclude": ["node_modules", ".vscode-test", "test-fixtures"],
+  "include": [
+    "src/**/*.ts",
+    "./node_modules/vscode/vscode.d.ts",
+    "./node_modules/vscode/lib/*",
+    ".eslintrc.js"
+  ]
 }

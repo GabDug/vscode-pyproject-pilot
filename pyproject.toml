@@ -1,9 +1,11 @@
 
 
+[build-system]
+requires = ["pdm>=1.9.0"]
+
 [tool]
 [tool.pdm]
 plugins = ["sync-pre-commit-lock"]
-
 
 [tool.pdm.scripts]
 _.env_file = ".env"
@@ -17,11 +19,11 @@ lint-mypy = {shell= "mypy", help="Run mypy type checker", env={"ENABLE_PAGERDUTY
 lint-ruff = {cmd="ruff .", help="Run ruff linter"}
 lint = {composite= ["lint-ruff", "lint-pylint", "lint-mypy"], help="Run all linters (ruff, pylint, mypy)."}
 foobar = {call = "foo_package.bar_module:main"}
-[tool.pdm.scripts.format]
-shell = """
-    isort tox_pdm tests
-    black tox_pdm tests
-"""
+# [tool.pdm.scripts.format]
+# shell = """
+#     isort tox_pdm tests
+#     black tox_pdm tests
+# """
 
 
 [tool.pdm.build]
