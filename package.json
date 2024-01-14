@@ -35,7 +35,7 @@
     "webpack-dev": "webpack --mode development --watch",
     "webpack": "webpack --mode development",
     "chrome": "npm run webpack && vscode-test-web --browserType=chromium --extensionDevelopmentPath=. sampleWorkspace",
-    "vscodetest": "vscode-test"
+    "vscodetest": "npm run test-compile && vscode-test"
   },
   "devDependencies": {
     "@types/eslint": "^8.56.0",
@@ -47,7 +47,6 @@
     "@typescript-eslint/parser": "^6.18.1",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
-    "@vscode/test-web": "^0.0.50",
     "copy-webpack-plugin": "^11.0.0",
     "eslint": "^8.56.0",
     "path-browserify": "^1.0.1",
@@ -66,6 +65,9 @@
     "util": "^0.12.5",
     "vscode-uri": "^3.0.8"
   },
+  "extensionDependencies": [
+    "tamasfe.even-better-toml"
+  ],
   "main": "./dist/extension",
   "$comment": "Browser is not supported for now (needs PDM locally, Python WASM is not ready yet...)",
   "_browser": "./dist/web-extension",
@@ -317,6 +319,32 @@
           "default": "",
           "scope": "resource",
           "ignoreSync": "true"
+        },
+        "pdm.codelens.pdmScripts": {
+          "type": "string",
+          "enum": [
+            "all",
+            "top",
+            "never"
+          ],
+          "default": "top",
+          "description": "Controls when the PDM script codelens is shown.",
+          "enumDescriptions": [
+            "Show the PDM script codelens for all scripts.",
+            "Show the PDM script codelens only at the beginning of the scripts declaration.",
+            "Never show the PDM script codelens."
+          ]
+        },
+        "pdm.codelens.pdmPlugins": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controls whether the PDM plugin codelens is shown, on tool.pdm.plugins."
+
+        }    ,   "pdm.codelens.pdmBuild": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controls whether the PDM plugin codelens is shown, on build-system."
+
         }
       }
     },

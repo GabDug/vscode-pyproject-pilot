@@ -2,10 +2,12 @@
 
 [build-system]
 requires = ["pdm>=1.9.0"]
+build-backend = "pdm.build-backend"
 
 [tool]
 [tool.pdm]
 plugins = ["sync-pre-commit-lock"]
+# plugins = ["pdm-pep517]
 
 [tool.pdm.scripts]
 _.env_file = ".env"
@@ -19,6 +21,9 @@ lint-mypy = {shell= "mypy", help="Run mypy type checker", env={"ENABLE_PAGERDUTY
 lint-ruff = {cmd="ruff .", help="Run ruff linter"}
 lint = {composite= ["lint-ruff", "lint-pylint", "lint-mypy"], help="Run all linters (ruff, pylint, mypy)."}
 foobar = {call = "foo_package.bar_module:main"}
+build = {call = "foo_package.bar_module:main"}
+compile = {call = "foo_package.bar_module:main"}
+watch = {call = "foo_package.bar_module:main"}
 # [tool.pdm.scripts.format]
 # shell = """
 #     isort tox_pdm tests
@@ -40,3 +45,5 @@ requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.scripts]
+test-script = "abc.main:main"

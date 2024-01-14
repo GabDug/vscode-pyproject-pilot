@@ -5,6 +5,7 @@
 
 import {
   CancellationToken,
+  Command,
   ExtensionContext,
   Hover,
   HoverProvider,
@@ -17,7 +18,14 @@ import {
   tasks,
   workspace,
 } from "vscode";
-import { IPdmScriptInfo, readScriptsLegacy } from "./readPyproject";
+import {
+  Commands,
+  Configuration,
+  asCommand,
+  readConfig,
+  registerCommand,
+} from "./enums";
+import { IPdmScriptInfo, readPyproject } from "./readPyproject";
 import { createTask, getPackageManager, startDebugging } from "./tasks";
 
 import { dirname } from "path";
@@ -39,32 +47,26 @@ export class PdmScriptHoverProvider implements HoverProvider {
   private enabled: boolean;
 
   constructor(private context: ExtensionContext) {
-    context.subscriptions.push(
-      commands.registerCommand(
-        "pdm.runScriptFromHover",
-        this.runScriptFromHover,
-        this
-      )
-    );
-    context.subscriptions.push(
-      commands.registerCommand(
-        "pdm.debugScriptFromHover",
-        this.debugScriptFromHover,
-        this
-      )
-    );
-    context.subscriptions.push(
-      workspace.onDidChangeTextDocument((e) => {
-        invalidateHoverScriptsCache(e.document);
-      })
-    );
-
-    const isEnabled = () =>
-      workspace.getConfiguration("pdm").get<boolean>("scriptHover", true);
+    const isEnabled = () => !!readConfig(workspace, Configuration.scriptHover);
     this.enabled = isEnabled();
     context.subscriptions.push(
+      registerCommand(
+        commands,
+        Commands.PdmRunScriptFromHover,
+        this.runScriptFromHover,
+        this
+      ),
+      registerCommand(
+        commands,
+        Commands.PdmDebugScriptFromHover,
+        this.debugScriptFromHover,
+        this
+      ),
+      workspace.onDidChangeTextDocument((e) => {
+        invalidateHoverScriptsCache(e.document);
+      }),
       workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration("pdm.scriptHover")) {
+        if (e.affectsConfiguration(Configuration.scriptHover)) {
           this.enabled = isEnabled();
         }
       })
@@ -83,7 +85,7 @@ export class PdmScriptHoverProvider implements HoverProvider {
     let hover: Hover | undefined = undefined;
 
     if (!cachedDocument || cachedDocument.fsPath !== document.uri.fsPath) {
-      cachedScripts = readScriptsLegacy(document);
+      cachedScripts = readPyproject(document)?.scripts;
       cachedDocument = document.uri;
     }
 
@@ -101,34 +103,31 @@ export class PdmScriptHoverProvider implements HoverProvider {
   }
 
   private createRunScriptMarkdown(script: string, documentUri: Uri): string {
-    const args = {
-      documentUri: documentUri,
-      script: script,
-    };
     return this.createMarkdownLink(
-      "Run Script",
-      "pdm.runScriptFromHover",
-      args,
-      "Run the script as a task"
+      asCommand({
+        title: "Run PDM Script",
+        command: Commands.PdmRunScriptFromHover,
+        tooltip: "Run the script as a task",
+        arguments: [
+          {
+            documentUri: documentUri,
+            script: script,
+          },
+        ],
+      })
     );
   }
 
-  private createMarkdownLink(
-    label: string,
-    cmd: string,
-    args: any,
-    tooltip: string,
-    separator?: string
-  ): string {
-    const encodedArgs = encodeURIComponent(JSON.stringify(args));
+  private createMarkdownLink(command: Command, separator?: string): string {
+    const encodedArgs = encodeURIComponent(JSON.stringify(command.arguments));
     let prefix = "";
     if (separator) {
       prefix = ` ${separator} `;
     }
-    return `${prefix}[${label}](command:${cmd}?${encodedArgs} "${tooltip}")`;
+    return `${prefix}[${command.title}](command:${command.command}?${encodedArgs} "${command.tooltip}")`;
   }
 
-  public async runScriptFromHover(args: any) {
+  public async runScriptFromHover(args: { script: string; documentUri: Uri }) {
     const script = args.script;
     const documentUri = args.documentUri;
     const folder = workspace.getWorkspaceFolder(documentUri);
@@ -144,7 +143,10 @@ export class PdmScriptHoverProvider implements HoverProvider {
     }
   }
 
-  public debugScriptFromHover(args: { script: string; documentUri: Uri }) {
+  public async debugScriptFromHover(args: {
+    script: string;
+    documentUri: Uri;
+  }) {
     const script = args.script;
     const documentUri = args.documentUri;
     const folder = workspace.getWorkspaceFolder(documentUri);

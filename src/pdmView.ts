@@ -29,20 +29,22 @@ import {
   Location,
   MarkdownString,
 } from "vscode";
-import { readScriptsLegacy } from "./readPyproject";
+import { readPyproject } from "./readPyproject";
 import {
   createTask,
   getPackageManager,
   getTaskName,
-  isAutoDetectionEnabled,
   isWorkspaceFolder,
   IPdmTaskDefinition,
   PdmTaskProvider,
   startDebugging,
   ITaskWithLocation,
   INSTALL_SCRIPT,
+  isAutoDetectionEnabled,
 } from "./tasks";
 import { printChannelOutput } from "./extension";
+import { Commands, Configuration, readConfig, registerCommand } from "./enums";
+import { ExplorerCommands } from "./enums";
 
 class Folder extends TreeItem {
   pyprojects: PyprojectTOML[] = [];
@@ -63,7 +65,7 @@ class Folder extends TreeItem {
 
 const pyprojectName = "pyproject.toml";
 
-class PyprojectTOML extends TreeItem {
+export class PyprojectTOML extends TreeItem {
   path: string;
   folder: Folder;
   scripts: PdmScript[] = [];
@@ -100,9 +102,7 @@ class PyprojectTOML extends TreeItem {
   }
 }
 
-type ExplorerCommands = "open" | "run";
-
-class PdmScript extends TreeItem {
+export class PdmScript extends TreeItem {
   task: Task;
   package: PyprojectTOML;
   taskLocation?: Location;
@@ -122,11 +122,9 @@ class PdmScript extends TreeItem {
     super(name, TreeItemCollapsibleState.None);
     this.taskLocation = task.location;
     const command: ExplorerCommands =
-      name === `${INSTALL_SCRIPT} `
+      name === `${INSTALL_SCRIPT} ` || name === "build "
         ? "run"
-        : workspace
-            .getConfiguration("pdm")
-            .get<ExplorerCommands>("scriptExplorerAction") || "open";
+        : readConfig(workspace, Configuration.scriptExplorerAction) || "open";
 
     const commandList = {
       open: {
@@ -146,7 +144,7 @@ class PdmScript extends TreeItem {
       },
       run: {
         title: "Run",
-        command: "pdm.runScript",
+        command: Commands.runScript,
         arguments: [this],
       },
     };
@@ -163,9 +161,20 @@ class PdmScript extends TreeItem {
     if (this.task.detail) {
       // Description is inline
       this.description = task.script?.help ?? this.task.detail;
-      this.tooltip = new MarkdownString(
-        `_${task.script?.help}_\n\n${task.script?.exec_type}: \`${task.script?.value}\``
-      );
+
+      let md_str = "";
+      if (task.script?.help) {
+        md_str += `_${task.script?.help}_\n\n`;
+      }
+      if (task.script?.exec_type) {
+        md_str += `${task.script?.exec_type}: `;
+      }
+      if (task.script?.value) {
+        md_str += `\`${task.script?.value}\``;
+      }
+      if (md_str.length > 0) {
+        this.tooltip = new MarkdownString(md_str);
+      }
     }
   }
 
@@ -198,17 +207,12 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   ) {
     const subscriptions = context.subscriptions;
     this.extensionContext = context;
+
     subscriptions.push(
-      commands.registerCommand("pdm.runScript", this.runScript, this)
-    );
-    subscriptions.push(
-      commands.registerCommand("pdm.debugScript", this.debugScript, this)
-    );
-    subscriptions.push(
-      commands.registerCommand("pdm.openScript", this.openScript, this)
-    );
-    subscriptions.push(
-      commands.registerCommand("pdm.runInstall", this.runInstall, this)
+      registerCommand(commands, Commands.runScript, this.runScript, this),
+      registerCommand(commands, Commands.debugScript, this.debugScript, this),
+      registerCommand(commands, Commands.openScript, this.openScript, this),
+      registerCommand(commands, Commands.runInstall, this.runInstall, this)
     );
   }
 
@@ -228,7 +232,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   }
 
   private findScriptPosition(document: TextDocument, script?: PdmScript) {
-    const scripts = readScriptsLegacy(document);
+    const scripts = readPyproject(document)?.scripts;
     if (!scripts) {
       return undefined;
     }
@@ -325,7 +329,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
           let message =
             "No scripts found. Make sure you have an explicit `[tool.pdm.scripts]` section.";
           if (!isAutoDetectionEnabled()) {
-            message = 'The setting "pdm.autoDetect" is "off".';
+            message = `The setting "${Configuration.autoDetect}" is "off".`;
           }
           this.taskTree = [new NoScripts(message)];
         }
@@ -390,9 +394,12 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     tasks.forEach((each) => {
       const location = each.location;
       if (location && !excludeConfig.has(location.uri.toString())) {
-        const regularExpressionsSetting = workspace
-          .getConfiguration("pdm", location.uri)
-          .get<string[]>("scriptExplorerExclude", []);
+        const regularExpressionsSetting =
+          readConfig(
+            workspace,
+            Configuration.scriptExplorerExclude,
+            location.uri
+          ) || [];
         excludeConfig.set(
           location.uri.toString(),
           regularExpressionsSetting?.map((value) => RegExp(value))

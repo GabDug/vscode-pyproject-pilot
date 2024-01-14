@@ -10,7 +10,6 @@ const webpack = require("webpack");
 const path = require("path");
 // eslint-disable-next-line no-undef
 const extensionPackage = require("./package.json");
-const CopyPlugin = require("copy-webpack-plugin");
 
 /**@type {import('webpack').Configuration}*/
 const config = {
@@ -66,65 +65,5 @@ const config = {
   },
 };
 
-const browserConfig = /** @type WebpackConfig */ {
-  mode: "none",
-  target: "webworker", // web extensions run in a webworker context
-  entry: {
-    "web-extension": "./src/extension.ts",
-  },
-  output: {
-    filename: "[name].js",
-    // eslint-disable-next-line no-undef
-    path: path.join(__dirname, "./dist"),
-    libraryTarget: "commonjs",
-  },
-  resolve: {
-    mainFields: ["module", "main"],
-    extensions: [".ts", ".js", ".mjs"], // support ts-files and js-files
-    alias: {
-      // replace the node based resolver with the browser version
-      "./ModuleResolver": "./BrowserModuleResolver",
-    },
-    fallback: {
-      // eslint-disable-next-line no-undef
-      path: require.resolve("path-browserify"),
-      // eslint-disable-next-line no-undef
-      //   util: require.resolve("util/"),
-      os: false,
-      fs: false,
-    },
-  },
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: "ts-loader",
-          },
-        ],
-      },
-    ],
-  },
-  externals: {
-    vscode: "commonjs vscode", // ignored because it doesn't exist
-  },
-  performance: {
-    hints: false,
-  },
-  devtool: "source-map",
-  plugins: [
-    new webpack.ProvidePlugin({
-      process: "process/browser",
-      babel: "prettier/esm/parser-babel.mjs",
-    }),
-    new webpack.DefinePlugin({
-      "process.env": JSON.stringify({}),
-      "process.env.BROWSER_ENV": JSON.stringify("true"),
-    }),
-  ],
-};
-
 // eslint-disable-next-line no-undef
-module.exports = [config, browserConfig];
+module.exports = [config];

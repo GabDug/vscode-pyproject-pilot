@@ -8,6 +8,7 @@
 // import * as findUp from 'find-up';
 import * as path from "path";
 
+import { Configuration, readConfig } from "./enums";
 import { Uri, workspace } from "vscode";
 
 // import * as whichPM from 'which-pm';
@@ -27,7 +28,7 @@ async function pathExists(filePath: string) {
 }
 
 async function isPoetryPreffered(
-  pkgPath: string,
+  pkgPath: string
 ): Promise<PreferredProperties> {
   if (await pathExists(path.join(pkgPath, "poetry.lock"))) {
     return { isPreferred: true, hasLockfile: true };
@@ -42,7 +43,7 @@ async function isPDMPreferred(pkgPath: string): Promise<PreferredProperties> {
 }
 
 export async function findPreferredPM(
-  pkgPath: string,
+  pkgPath: string
 ): Promise<{ name: string; multipleLockFilesDetected: boolean }> {
   const detectedPackageManagerNames: string[] = [];
   const detectedPackageManagerProperties: PreferredProperties[] = [];
@@ -68,7 +69,7 @@ export async function findPreferredPM(
 
   let lockfilesCount = 0;
   detectedPackageManagerProperties.forEach(
-    (detected) => (lockfilesCount += detected.hasLockfile ? 1 : 0),
+    (detected) => (lockfilesCount += detected.hasLockfile ? 1 : 0)
   );
 
   return {
@@ -77,11 +78,9 @@ export async function findPreferredPM(
   };
 }
 
-
 export function getPackageManagerPath(packageManager: string) {
   // Check if interpreter path is set
-  const config = workspace.getConfiguration("pdm");
-  const pdmPath = config.get<string>("pdmPath");
+  const pdmPath = readConfig(workspace, Configuration.pdmPath);
   if (pdmPath) {
     return pdmPath;
   }

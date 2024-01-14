@@ -31,9 +31,11 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { Utils } from "vscode-uri";
 import { findPreferredPM, getPackageManagerPath } from "./preferred-pm";
-import { IPdmScriptReference, readScriptsLegacy } from "./readPyproject";
+import { IPdmScriptReference, readPyproject } from "./readPyproject";
 import { minimatch } from "minimatch";
 import { printChannelOutput } from "./extension";
+import { Configuration, readConfig } from "./enums";
+import { AutoDetect } from "./enums";
 
 const excludeRegex = new RegExp("^(node_modules|.vscode-test)$", "i");
 
@@ -50,8 +52,6 @@ export interface IFolderTaskItem extends QuickPickItem {
   description?: string;
   detail?: string;
 }
-
-type AutoDetect = "on" | "off";
 
 let cachedTasks: ITaskWithLocation[] | undefined = undefined;
 
@@ -108,7 +108,7 @@ export class PdmTaskProvider implements TaskProvider {
         });
       }
       const cmd = [kind.script];
-      if (kind.script !== INSTALL_SCRIPT) {
+      if (kind.script !== INSTALL_SCRIPT && kind.script !== "build") {
         cmd.unshift("run");
       }
       return createTask(
@@ -148,31 +148,23 @@ function isTestTask(name: string): boolean {
 }
 
 function isPrePostScript(name: string): boolean {
+  // From https://pdm-project.org/latest/usage/scripts/#hook-scripts
   const prePostScripts: Set<string> = new Set([
-    "preuninstall",
-    "postuninstall",
-    "prepack",
-    "postpack",
-    "preinstall",
-    "postinstall",
-    "prepack",
-    "postpack",
-    "prepublish",
-    "postpublish",
-    "preversion",
-    "postversion",
-    "prestop",
-    "poststop",
-    "prerestart",
-    "postrestart",
-    "preshrinkwrap",
-    "postshrinkwrap",
-    "pretest",
-    "postest",
-    "prepublishOnly",
+    "post_init",
+    "pre_install",
+    "post_install",
+    "post_lock",
+    "pre_build",
+    "post_build",
+    "pre_publish",
+    "post_publish",
+    "pre_script",
+    "post_script",
+    "pre_run",
+    "post_run",
   ]);
 
-  const prepost = ["pre" + name, "post" + name];
+  const prepost = ["pre_" + name, "post_" + name];
   for (const knownScript of prePostScripts) {
     if (knownScript === prepost[0] || knownScript === prepost[1]) {
       return true;
@@ -190,10 +182,9 @@ export async function getPackageManager(
   folder: Uri,
   showWarning = true
 ): Promise<string> {
-  let packageManagerName = workspace
-    .getConfiguration("pdm", folder)
-    .get<string>("packageManager", "pdm");
-
+  let packageManagerName =
+    readConfig(workspace, Configuration.packageManager, folder) ||
+    ("auto" as string);
   if (packageManagerName === "auto") {
     const { name, multipleLockFilesDetected: multiplePMDetected } =
       await findPreferredPM(folder.fsPath);
@@ -254,7 +245,7 @@ async function detectPdmScripts(
 ): Promise<ITaskWithLocation[]> {
   const emptyTasks: ITaskWithLocation[] = [];
   const allTasks: ITaskWithLocation[] = [];
-  const visitedPackageJsonFiles: Set<string> = new Set();
+  const visitedPyprojecttTomlFiles: Set<string> = new Set();
 
   const folders = workspace.workspaceFolders;
   if (!folders) {
@@ -277,14 +268,14 @@ async function detectPdmScripts(
         for (const path of paths) {
           if (
             !isExcluded(folder, path) &&
-            !visitedPackageJsonFiles.has(path.fsPath)
+            !visitedPyprojecttTomlFiles.has(path.fsPath)
           ) {
             const tasks = await providePdmScriptsForPyprojectToml(
               context,
               path,
               showWarning
             );
-            visitedPackageJsonFiles.add(path.fsPath);
+            visitedPyprojecttTomlFiles.add(path.fsPath);
             allTasks.push(...tasks);
           }
         }
@@ -343,11 +334,7 @@ export async function providePdmScripts(
 }
 
 export function isAutoDetectionEnabled(folder?: WorkspaceFolder): boolean {
-  return (
-    workspace
-      .getConfiguration("pdm", folder?.uri)
-      .get<AutoDetect>("autoDetect") === "on"
-  );
+  return readConfig(workspace, Configuration.autoDetect, folder?.uri) === "on";
 }
 
 function isExcluded(folder: WorkspaceFolder, pyprojectTomlUri: Uri) {
@@ -355,9 +342,7 @@ function isExcluded(folder: WorkspaceFolder, pyprojectTomlUri: Uri) {
     return minimatch(path, pattern, { dot: true });
   }
 
-  const exclude = workspace
-    .getConfiguration("pdm", folder.uri)
-    .get<string | string[]>("exclude");
+  const exclude = readConfig(workspace, Configuration.exclude, folder.uri);
   const pyprojectTomlFolder = path.dirname(pyprojectTomlUri.fsPath);
 
   if (exclude) {
@@ -423,10 +408,9 @@ export async function providePdmScriptsForPyprojectToml(
   }
 
   if (
-    !workspace
-      .getConfiguration("pdm", folder)
-      .get<string[]>("scriptExplorerExclude", [])
-      .find((e) => e.includes(INSTALL_SCRIPT))
+    !(
+      readConfig(workspace, Configuration.scriptExplorerExclude, folder) || []
+    ).find((e) => e.includes(INSTALL_SCRIPT))
   ) {
     result.push({
       task: await createTask(
@@ -436,6 +420,17 @@ export async function providePdmScriptsForPyprojectToml(
         folder,
         pyprojectTomlUri,
         "install dependencies from package",
+        []
+      ),
+    });
+    result.push({
+      task: await createTask(
+        packageManager,
+        "build",
+        ["build"],
+        folder,
+        pyprojectTomlUri,
+        "build package",
         []
       ),
     });
@@ -457,7 +452,7 @@ export async function createTask(
   folder: WorkspaceFolder,
   pyprojectTomlUri: Uri,
   scriptValue?: string,
-  matcher?: any
+  matcher?: string | string[]
 ): Promise<Task> {
   let kind: IPdmTaskDefinition;
   if (typeof script === "string") {
@@ -480,9 +475,7 @@ export async function createTask(
         result[i] = cmd[i];
       }
     }
-    if (
-      workspace.getConfiguration("pdm", folder.uri).get<boolean>("runQuiet")
-    ) {
+    if (readConfig(workspace, Configuration.runQuiet, folder.uri)) {
       result.unshift("--silent");
     }
     return result;
@@ -534,7 +527,7 @@ export async function createTask(
   return task;
 }
 
-export function getPackageJsonUriFromTask(task: Task): Uri | null {
+export function getPyprojectTomlUriFromTask(task: Task): Uri | null {
   if (isWorkspaceFolder(task.scope)) {
     if (task.definition.path) {
       return Uri.file(
@@ -626,7 +619,7 @@ export function findScriptAtPosition(
   buffer: string,
   position: Position
 ): string | undefined {
-  const read = readScriptsLegacy(document, buffer);
+  const read = readPyproject(document, buffer)?.scripts;
   if (!read) {
     return undefined;
   }
@@ -652,14 +645,19 @@ export async function getScripts(pyprojectTomlUri: Uri) {
   if (!(await exists(pyprojectToml))) {
     return undefined;
   }
-  try {
-    const document: TextDocument = await workspace.openTextDocument(
-      pyprojectTomlUri
-    );
-    return readScriptsLegacy(document);
-  } catch (e) {
-    const parseError = `Pdm task detection: failed to parse the file ${pyprojectTomlUri.fsPath}`;
-    printChannelOutput(parseError);
-    throw new Error(parseError);
-  }
+  // try {
+  //   const document: TextDocument = await workspace.openTextDocument(
+  //     pyprojectTomlUri
+  //   );
+  //   return readPyproject(document)?.scripts;
+  // } catch (e) {
+  //   const parseError = `Pdm task detection: failed to parse the file ${pyprojectTomlUri.fsPath}`;
+  //   printChannelOutput(parseError);
+  //   printChannelOutput(e);
+  //   throw new Error(parseError);
+  // }
+  const document: TextDocument = await workspace.openTextDocument(
+    pyprojectTomlUri
+  );
+  return readPyproject(document)?.scripts;
 }

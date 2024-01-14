@@ -1,8 +1,5 @@
-build-system.requires = ["pdm-pep517"]
-# build-system.
-
 [tool.pdm.scripts]
-_.env_file = ".env"
+
 dev = "flask run -p 54321"
 dev_multiline = """
     isort tox_pdm tests
@@ -32,15 +29,18 @@ foobar_args = {call = "foo_package.bar_module:main('dev')"}
 lint = "flake8"
 test = "pytest"
 all = {composite = ["lint", "test"]}
-all_args = {composite = ["lint mypackage/", "test -v tests/"]}
+[tool.pdm.scripts.all_args]
+composite = ["lint mypackage/", "test -v tests/"]
 
-0 = {cmd = "echo 0"}
-"1" = {cmd = "echo 0"}
-only_help = {help="Test"}
+[tool.pdm.scripts._]
+env_file = ".env"
 
-build = {call = "foo_package.bar_module:main"}
-compile = {call = "foo_package.bar_module:main"}
-watch = {call = "foo_package.bar_module:main"}
-pre_install = "test"
-install = "test"
-pre_test = "test"
+# Quoted
+[tool.pdm.scripts."all_args_quoted"]
+composite = ["lint mypackage/", "test -v tests/"]
+
+# Quoted multiline
+[tool.pdm.scripts."empty"]
+# [tool.pdm.scripts.'''literal_empty_quoted''']
+[tool.pdm.scripts.'all_args_quoted_multiline_literal']
+cmd = "echo test"

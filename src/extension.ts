@@ -6,6 +6,18 @@
 import * as vscode from "vscode";
 
 import {
+  runSelectedScript,
+  selectAndRunScriptFromFile,
+  selectAndRunScriptFromFolder,
+} from "./commands";
+import {
+  Commands,
+  Configuration,
+  ContextKey,
+  registerCommand,
+  setContextKey,
+} from "./enums";
+import {
   PdmScriptHoverProvider,
   invalidateHoverScriptsCache,
 } from "./scriptHover";
@@ -15,11 +27,6 @@ import {
   hasPyprojectToml,
   invalidateTasksCache,
 } from "./tasks";
-import {
-  runSelectedScript,
-  selectAndRunScriptFromFile,
-  selectAndRunScriptFromFolder,
-} from "./commands";
 
 import { PdmScriptLensProvider } from "./pdmCodeLens";
 import { PdmScriptsTreeDataProvider } from "./pdmView";
@@ -53,16 +60,16 @@ export async function activate(
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (
-        e.affectsConfiguration("pdm.exclude") ||
-        e.affectsConfiguration("pdm.autoDetect") ||
-        e.affectsConfiguration("pdm.scriptExplorerExclude")
+        e.affectsConfiguration(Configuration.exclude) ||
+        e.affectsConfiguration(Configuration.autoDetect) ||
+        e.affectsConfiguration(Configuration.scriptExplorerExclude)
       ) {
         invalidateTasksCache();
         if (treeDataProvider) {
           treeDataProvider.refresh();
         }
       }
-      if (e.affectsConfiguration("pdm.scriptExplorerAction")) {
+      if (e.affectsConfiguration(Configuration.scriptExplorerAction)) {
         if (treeDataProvider) {
           treeDataProvider.refresh();
         }
@@ -73,27 +80,26 @@ export async function activate(
   registerHoverProvider(context);
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("pdm.runSelectedScript", runSelectedScript)
+    vscode.commands.registerCommand(
+      Commands.runSelectedScript,
+      runSelectedScript
+    )
   );
 
   if (await hasPyprojectToml()) {
-    vscode.commands.executeCommand(
-      "setContext",
-      "pdm:showScriptExplorer",
-      true
-    );
+    setContextKey(vscode.commands, ContextKey.showScriptExplorer, true);
   }
+
   context.subscriptions.push(
-    vscode.commands.registerCommand("pdm.runScriptFromFolder", (args) => {
+    registerCommand(vscode.commands, Commands.runScriptFromFolder, (args) => {
       // If args is not an ExtensioContext, add it
-      // @ts-d
       printChannelOutput(args);
       if (args instanceof vscode.Uri) {
         printChannelOutput("args is instanceof vscode.Uri");
         return selectAndRunScriptFromFolder(context, [args]);
       }
       // Elif args is a list or array
-      // @ts-ignore
+
       if (Array.isArray(args)) {
         printChannelOutput("args is Array.isArray");
         return selectAndRunScriptFromFolder(context, args);
@@ -101,17 +107,15 @@ export async function activate(
       // Unpack args (which contains context)
       printChannelOutput("args is not instanceof vscode.Uri");
       return selectAndRunScriptFromFolder(context, [args]);
-    })
-  );
-  context.subscriptions.push(
-    vscode.commands.registerCommand("pdm.runScriptFromFile", (args) => {
+    }),
+    registerCommand(vscode.commands, Commands.runScriptFromFile, (args) => {
       // If args is not an ExtensioContext, add it
       if (args instanceof vscode.Uri) {
         printChannelOutput("args is instanceof vscode.Uri");
         return selectAndRunScriptFromFile(context, args);
       }
       // Elif args is a list or array
-      // @ts-ignore
+
       if (Array.isArray(args)) {
         printChannelOutput("args is Array.isArray");
         return selectAndRunScriptFromFile(context, args[0]);
@@ -119,26 +123,24 @@ export async function activate(
       // Unpack args (which contains context)
       printChannelOutput("args is not instanceof vscode.Uri");
       return selectAndRunScriptFromFile(context, args);
-    })
-  );
-  context.subscriptions.push(
-    vscode.commands.registerCommand("pdm.refresh", (echo) => {
+    }),
+    registerCommand(vscode.commands, Commands.PdmRefresh, (echo) => {
       // If we have no arguments, assume we are comming from UI and echo
       if (typeof echo !== "boolean" || echo === undefined) {
         echo = true;
       }
       invalidateScriptCaches(echo);
-    })
-  );
-  context.subscriptions.push(
-    vscode.commands.registerCommand("pdm.packageManager", (args) => {
+      return Promise.resolve();
+    }),
+    registerCommand(vscode.commands, Commands.PdmPackageManager, (args) => {
       if (args instanceof vscode.Uri) {
         return getPackageManager(context, args);
       }
-      return "";
-    })
+
+      return Promise.resolve("");
+    }),
+    new PdmScriptLensProvider(context)
   );
-  context.subscriptions.push(new PdmScriptLensProvider(context));
 }
 
 let taskProvider: PdmTaskProvider;

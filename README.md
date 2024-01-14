@@ -66,11 +66,11 @@ _In no particular order. Feel free to contribute!_
 - [X] Setting for custom PDM interpreter path
 - [X] Support for `help` arguments in `pdm.scripts`?
 - Expose `pdm` commands as tasks (install, update, build, ...)
-	- build: only if `[build-system]` is set
-	- install plugins: only if `[tool.pdm.plugins]` is set
+	- [ ] build: only if `[build-system]` is set
+	- [ ] install plugins: only if `[tool.pdm.plugins]` is set
 	- update/install/sync: only if `[project.dependencies]` is set or `[tool.pdm.dev-dependencies]` is set
 - Expose `project.scripts` as tasks (or launch configurations?)
-- CodeLens on `plugins` to install them automatically
+- [ ] CodeLens on `plugins` to install them automatically
 - Support `poethepoet` with Poetry?
 - Writing some tests?
 - ~~Support for VS Code in browser?~~
@@ -78,13 +78,14 @@ _In no particular order. Feel free to contribute!_
 - Support `*.pyproject.toml` file pattern?
 - Support internationalization (translations)
 - Exclude some pyproject.toml files from auto detection (e.g. in `venv`, `.pdm-build` folders)
-- Remove most of ts-ignore
 - CodeLens in lockfile (showing dependencies, dependents, ...)
 - CodeLens on dependencies in `pyproject.toml`
 
-## Recommended extensions
+## Required extensions
 
-- [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) for validation of `pyproject.toml` and `pdm.toml` files.
+This extension requires a language extension for TOML files to be installed.
+
+We recommend [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml), which will also validate `pyproject.toml` and `pdm.toml` files.
 
 ## Credits
 

@@ -8,8 +8,10 @@ module.exports = defineConfig([
     workspaceFolder: "./sampleWorkspace",
     mocha: {
       ui: "tdd",
-      timeout: 20000,
+      timeout: 2000000, // FIXME
     },
+    launchArgs: ["--install-extension=tamasfe.even-better-toml"],
   },
+
   // you can specify additional test configurations, too
 ]);

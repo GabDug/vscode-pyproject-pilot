@@ -17,25 +17,27 @@ import {
   languages,
   workspace,
 } from "vscode";
-import { readPyproject, readScriptsLegacy } from "./readPyproject";
+import { Commands, Configuration, asCommand, readConfig } from "./enums";
+import { IPdmScriptInfo, IPyProjectInfo, readPyproject } from "./readPyproject";
 
 import { findPreferredPM } from "./preferred-pm";
 import { printChannelOutput } from "./extension";
 
-const enum Constants {
-  ConfigKey = "debug.javascript.codelens.npmScripts",
-}
-
 const getFreshLensLocation = () =>
-  workspace.getConfiguration().get(Constants.ConfigKey);
-
+  readConfig(workspace, Configuration.ScriptsConfigKey);
+const getFreshPluginsLocation = () =>
+  readConfig(workspace, Configuration.PluginsConfigKey);
+const getFreshBuildLocation = () =>
+  readConfig(workspace, Configuration.BuildConfigKey);
 /**
  * Pdm script lens provider implementation. Can show a "Run script" text above any
- * npm script, or the npm scripts section.
+ * pdm script, or the pdm scripts section.
  */
 export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
   // private lensLocation = "all";
-  private lensLocation = getFreshLensLocation();
+  private scriptsLensLocation = getFreshLensLocation();
+  private buildLens = getFreshBuildLocation();
+  private pluginsLens = getFreshPluginsLocation();
   private readonly changeEmitter = new EventEmitter<void>();
   private subscriptions: Disposable[] = [];
   private context: ExtensionContext;
@@ -49,16 +51,21 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     this.subscriptions.push(
       this.changeEmitter,
       workspace.onDidChangeConfiguration((evt) => {
-        if (evt.affectsConfiguration(Constants.ConfigKey)) {
-          // this.lensLocation = "all";
-          this.lensLocation = getFreshLensLocation();
+        if (evt.affectsConfiguration(Configuration.ScriptsConfigKey)) {
+          this.scriptsLensLocation = getFreshLensLocation();
+          this.changeEmitter.fire();
+        } else if (evt.affectsConfiguration(Configuration.PluginsConfigKey)) {
+          this.pluginsLens = getFreshPluginsLocation();
+          this.changeEmitter.fire();
+        } else if (evt.affectsConfiguration(Configuration.BuildConfigKey)) {
+          this.buildLens = getFreshBuildLocation();
           this.changeEmitter.fire();
         }
       }),
       languages.registerCodeLensProvider(
         {
           language: "toml",
-          pattern: "**/pyproject.toml",
+          pattern: "**/{pyproject.toml,*.pyproject.toml}",
           scheme: "file",
         },
         this
@@ -71,30 +78,99 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
    */
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     const codeLenses: CodeLens[] = [];
-    if (this.lensLocation === "never") {
+
+    const pyproject = readPyproject(document);
+    if (!pyproject) {
       return [];
     }
-    const pyproject = readPyproject(document);
-    const scripts_tokens = pyproject?.scripts;
+
+    await this.providePdmScriptsCodeLenses(document, codeLenses, pyproject);
+    this.providePdmPluginsCodeLenses(codeLenses, pyproject, document);
+    this.providePdmBuildCodeLenses(codeLenses, pyproject, document);
+
+    return codeLenses;
+  }
+
+  private providePdmBuildCodeLenses(
+    codeLenses: CodeLens[],
+    pyproject: IPyProjectInfo,
+    document: TextDocument
+  ) {
+    if (!this.buildLens) {
+      return;
+    }
+    if (!pyproject.build) {
+      return;
+    }
+    codeLenses.push(
+      new CodeLens(
+        pyproject.build.location.range,
+        asCommand({
+          // XXX Pluralize
+          title: "$(debug-start) " + "Build package",
+          command: Commands.runScriptFromFile,
+          arguments: [document.uri],
+        })
+      )
+    );
+  }
+
+  private providePdmPluginsCodeLenses(
+    codeLenses: CodeLens[],
+    pyproject: IPyProjectInfo,
+    document: TextDocument
+  ) {
+    if (!this.pluginsLens) {
+      return;
+    }
+    if (!pyproject.plugins) {
+      return;
+    }
+    codeLenses.push(
+      new CodeLens(
+        pyproject.plugins.location.range,
+        asCommand({
+          // XXX Pluralize
+          title: "$(debug-start) " + "Install PDM plugins",
+          command: Commands.runScriptFromFile,
+          arguments: [document.uri],
+        })
+      )
+    );
+  }
+
+  private async providePdmScriptsCodeLenses(
+    document: TextDocument,
+    codeLenses: CodeLens[],
+    project: IPyProjectInfo
+  ) {
+    if (this.scriptsLensLocation === "never") {
+      return [];
+    }
+
+    const scripts_tokens = project?.scripts;
     if (!scripts_tokens) {
       return [];
     }
-    // const contextExtension
+
     const title = "$(debug-start) " + "Run script";
     const cwd = path.dirname(document.uri.fsPath);
-    if (this.lensLocation === "top") {
+    if (this.scriptsLensLocation === "top") {
       printChannelOutput(workspace.getWorkspaceFolder(document.uri));
       printChannelOutput(document.uri);
       codeLenses.push(
-        new CodeLens(scripts_tokens.location.range, {
-          title,
-          // FIXME this is the command to override
-          command: "pdm.runScriptFromFile",
-          // command: 'extension.js-debug.npmScript',
-          arguments: [document.uri],
-        })
+        new CodeLens(
+          scripts_tokens.location.range,
+          asCommand({
+            title,
+            // FIXME this is the command to override
+            command: Commands.runScriptFromFile,
+            // command: 'extension.js-debug.npmScript',
+            arguments: [document.uri],
+          })
+        )
       );
-    } else if (this.lensLocation === "all") {
+    } else if (this.scriptsLensLocation === "all") {
       const packageManager = await findPreferredPM(
         Uri.joinPath(document.uri, "..").fsPath
       );
@@ -114,38 +190,6 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
         )
       );
     }
-
-    if (pyproject?.plugins) {
-      codeLenses.push(
-        new CodeLens(pyproject.plugins.location.range, {
-          // XXX Pluralize
-          title: "$(debug-start) " + "Install PDM plugins",
-          command: "pdm.runScriptFromFile",
-          arguments: [document.uri],
-        })
-      );
-    } else {
-      codeLenses.push(
-        new CodeLens(new Range(0, 0, 0, 0), {
-          // XXX Pluralize
-          title: "$(debug-start) " + "Install PDM plugins (fake)",
-          command: "pdm.runScriptFromFile",
-          arguments: [document.uri],
-        })
-      );
-    }
-    if (pyproject?.build) {
-      codeLenses.push(
-        new CodeLens(pyproject.build.location.range, {
-          // XXX Pluralize
-          title: "$(debug-start) " + "Build package",
-          command: "pdm.runScriptFromFile",
-          arguments: [document.uri],
-        })
-      );
-    }
-
-    return codeLenses;
   }
 
   /**
