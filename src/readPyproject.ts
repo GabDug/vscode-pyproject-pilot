@@ -78,7 +78,7 @@ export function readScripts(
   let start: Position | undefined;
 
   const scripts: IPdmScriptReference[] = [];
-  const scriptsHash: { [key: string]: Partial<IPdmScriptReference> } = {};
+  const scriptsHash: Record<string, Partial<IPdmScriptReference>> = {};
 
   const topBodyTable = ast.body[0];
 

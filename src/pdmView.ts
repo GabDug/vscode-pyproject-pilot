@@ -4,47 +4,49 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as path from "path";
+
 import {
-  commands,
   Event,
   EventEmitter,
   ExtensionContext,
+  Location,
+  MarkdownString,
+  Position,
   Range,
   Selection,
   Task,
   TaskGroup,
-  tasks,
   TextDocument,
   TextDocumentShowOptions,
   ThemeIcon,
   TreeDataProvider,
   TreeItem,
-  TreeItemLabel,
   TreeItemCollapsibleState,
+  TreeItemLabel,
   Uri,
+  WorkspaceFolder,
+  commands,
+  tasks,
   window,
   workspace,
-  WorkspaceFolder,
-  Position,
-  Location,
-  MarkdownString,
 } from "vscode";
-import { readPyproject } from "./readPyproject";
+import { Commands, Configuration, readConfig, registerCommand } from "./enums";
 import {
+  INSTALL_SCRIPT,
+  IPdmTaskDefinition,
+  ITaskWithLocation,
+  PdmTaskProvider,
   createTask,
   getPackageManager,
   getTaskName,
-  isWorkspaceFolder,
-  IPdmTaskDefinition,
-  PdmTaskProvider,
-  startDebugging,
-  ITaskWithLocation,
-  INSTALL_SCRIPT,
   isAutoDetectionEnabled,
+  isWorkspaceFolder,
+  startDebugging,
 } from "./tasks";
-import { printChannelOutput } from "./extension";
-import { Commands, Configuration, readConfig, registerCommand } from "./enums";
+
 import { ExplorerCommands } from "./enums";
+import { printChannelOutput } from "./extension";
+import { readPyproject } from "./readPyproject";
 
 class Folder extends TreeItem {
   pyprojects: PyprojectTOML[] = [];
@@ -133,12 +135,12 @@ export class PdmScript extends TreeItem {
         arguments: [
           this.taskLocation?.uri,
           this.taskLocation
-            ? <TextDocumentShowOptions>{
+            ? ({
                 selection: new Range(
                   this.taskLocation.range.start,
                   this.taskLocation.range.end
                 ),
-              }
+              } as TextDocumentShowOptions)
             : undefined,
         ],
       },
@@ -383,13 +385,13 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   }
 
   private buildTaskTree(tasks: ITaskWithLocation[]): TaskTree {
-    const folders: Map<string, Folder> = new Map();
-    const packages: Map<string, PyprojectTOML> = new Map();
+    const folders = new Map<string, Folder>();
+    const packages = new Map<string, PyprojectTOML>();
 
     let folder = null;
     let pyprojectToml = null;
 
-    const excludeConfig: Map<string, RegExp[]> = new Map();
+    const excludeConfig = new Map<string, RegExp[]>();
 
     tasks.forEach((each) => {
       const location = each.location;
@@ -413,7 +415,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       if (
         regularExpressions &&
         regularExpressions.some((regularExpression) =>
-          (<IPdmTaskDefinition>each.task.definition).script.match(
+          (each.task.definition as IPdmTaskDefinition).script.match(
             regularExpression
           )
         )
@@ -430,9 +432,8 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
           folder = new Folder(each.task.scope);
           folders.set(each.task.scope.name, folder);
         }
-        const definition: IPdmTaskDefinition = <IPdmTaskDefinition>(
-          each.task.definition
-        );
+        const definition: IPdmTaskDefinition = each.task
+          .definition as IPdmTaskDefinition;
         const relativePath = definition.path ? definition.path : "";
         const fullPath = path.join(each.task.scope.name, relativePath);
         pyprojectToml = packages.get(fullPath);

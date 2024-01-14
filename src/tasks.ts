@@ -3,39 +3,38 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import {
-  TaskDefinition,
-  Task,
-  TaskGroup,
-  WorkspaceFolder,
-  RelativePattern,
-  ShellExecution,
-  Uri,
-  workspace,
-  TaskProvider,
-  TextDocument,
-  tasks,
-  TaskScope,
-  QuickPickItem,
-  window,
-  Position,
-  ExtensionContext,
-  env,
-  ShellQuotedString,
-  ShellQuoting,
-  commands,
-  Location,
-  CancellationTokenSource,
-} from "vscode";
 import * as path from "path";
 import * as vscode from "vscode";
-import { Utils } from "vscode-uri";
+
+import {
+  CancellationTokenSource,
+  ExtensionContext,
+  Location,
+  Position,
+  QuickPickItem,
+  RelativePattern,
+  ShellExecution,
+  ShellQuotedString,
+  ShellQuoting,
+  Task,
+  TaskDefinition,
+  TaskGroup,
+  TaskProvider,
+  TaskScope,
+  TextDocument,
+  Uri,
+  WorkspaceFolder,
+  commands,
+  tasks,
+  window,
+  workspace,
+} from "vscode";
+import { Configuration, readConfig } from "./enums";
 import { findPreferredPM, getPackageManagerPath } from "./preferred-pm";
 import { IPdmScriptReference, readPyproject } from "./readPyproject";
+
 import { minimatch } from "minimatch";
-import { printChannelOutput } from "./extension";
-import { Configuration, readConfig } from "./enums";
-import { AutoDetect } from "./enums";
+import { Utils } from "vscode-uri";
 
 const excludeRegex = new RegExp("^(node_modules|.vscode-test)$", "i");
 
@@ -81,9 +80,9 @@ export class PdmTaskProvider implements TaskProvider {
   }
 
   public async resolveTask(_task: Task): Promise<Task | undefined> {
-    const pdmTask = (<any>_task.definition).script;
+    const pdmTask = (_task.definition as any).script;
     if (pdmTask) {
-      const kind: IPdmTaskDefinition = <any>_task.definition;
+      const kind: IPdmTaskDefinition = _task.definition as any;
       let pyprojectTomlUri: Uri;
       if (
         _task.scope === undefined ||
@@ -149,7 +148,7 @@ function isTestTask(name: string): boolean {
 
 function isPrePostScript(name: string): boolean {
   // From https://pdm-project.org/latest/usage/scripts/#hook-scripts
-  const prePostScripts: Set<string> = new Set([
+  const prePostScripts = new Set<string>([
     "post_init",
     "pre_install",
     "post_install",
@@ -245,7 +244,7 @@ async function detectPdmScripts(
 ): Promise<ITaskWithLocation[]> {
   const emptyTasks: ITaskWithLocation[] = [];
   const allTasks: ITaskWithLocation[] = [];
-  const visitedPyprojecttTomlFiles: Set<string> = new Set();
+  const visitedPyprojecttTomlFiles = new Set<string>();
 
   const folders = workspace.workspaceFolders;
   if (!folders) {
@@ -303,7 +302,7 @@ export async function detectPdmScriptsForFolder(
     );
     const paths = await workspace.findFiles(relativePattern, "**/.venv/**");
 
-    const visitedPackageJsonFiles: Set<string> = new Set();
+    const visitedPackageJsonFiles = new Set<string>();
     for (const path of paths) {
       if (!visitedPackageJsonFiles.has(path.fsPath)) {
         const tasks = await providePdmScriptsForPyprojectToml(
@@ -612,7 +611,7 @@ export async function startDebugging(
   );
 }
 
-export type StringMap = { [s: string]: string };
+export type StringMap = Record<string, string>;
 
 export function findScriptAtPosition(
   document: TextDocument,
