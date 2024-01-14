@@ -1,13 +1,9 @@
-import {
-  CodeLens,
-  Command,
-  ConfigurationScope,
-  Range,
-  Uri,
-  WorkspaceFolder,
-  commands,
-  workspace,
-} from "vscode";
+/**
+ * Freely inspired by vscode-js-debug
+ * Copyright Microsoft Corporations, released under MIT license
+ */
+
+import { Command, ConfigurationScope, Uri, commands, workspace } from "vscode";
 import type { PdmScript, PyprojectTOML } from "./pdmView";
 
 export const enum Commands {
@@ -41,7 +37,7 @@ export interface ICommandTypes {
   [Commands.openScript](selection: PdmScript | PyprojectTOML): void;
   [Commands.runInstall](selection: PyprojectTOML): void;
   [Commands.PdmPackageManager](args: any): string;
-  [Commands.PdmRefresh](echo: any): void;
+  [Commands.PdmRefresh](echo?: boolean): void;
   [Commands.runScriptFromFile](args: any): void;
   [Commands.runScriptFromFolder](args: any): void;
 }
@@ -126,7 +122,7 @@ export const runCommand = async <K extends keyof ICommandTypes>(
   key: K,
   ...args: Parameters<ICommandTypes[K]>
 ): Promise<ReturnType<ICommandTypes[K]>> =>
-  (await ns.executeCommand(key, ...args)) as ReturnType<ICommandTypes[K]>;
+  await ns.executeCommand(key, ...args);
 
 export const asCommand = <K extends keyof ICommandTypes>(command: {
   title: string;

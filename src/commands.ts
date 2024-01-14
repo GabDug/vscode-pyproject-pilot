@@ -36,8 +36,11 @@ export function runSelectedScript(context: vscode.ExtensionContext) {
 
 export async function selectAndRunScriptFromFile(
   context: vscode.ExtensionContext,
-  selectedPath: vscode.Uri
+  selectedPath: vscode.Uri | vscode.Uri[]
 ) {
+  if (Array.isArray(selectedPath)) {
+    selectedPath = selectedPath[0];
+  }
   const taskList: ITaskWithLocation[] = await providePdmScriptsForPyprojectToml(
     context,
     selectedPath,
@@ -60,15 +63,21 @@ export async function selectAndRunScriptFromFolder(
   context: vscode.ExtensionContext,
   selectedFolders: vscode.Uri[] | vscode.Uri
 ) {
-  // Debug to output (not popup)
-  if (!Array.isArray(selectedFolders)) {
-    selectedFolders = [selectedFolders];
+  // XXX(GabDug): support multiple folders selected (deduplicated)
+  let selectedFolder: vscode.Uri;
+  if (Array.isArray(selectedFolders)) {
+    if (selectedFolders?.length === 0) {
+      return;
+    }
+    selectedFolder = selectedFolders[0];
+    if (selectedFolders?.length > 1) {
+      vscode.window.showInformationMessage(
+        `Only one folder can be selected at a time. While proceeding, only the first folder will be used: ${selectedFolder.fsPath}`
+      );
+    }
+  } else {
+    selectedFolder = selectedFolders;
   }
-  if (selectedFolders?.length === 0) {
-    return;
-  }
-  const selectedFolder = selectedFolders[0];
-
   const taskList: IFolderTaskItem[] = await detectPdmScriptsForFolder(
     context,
     selectedFolder

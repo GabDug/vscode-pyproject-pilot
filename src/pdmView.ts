@@ -30,7 +30,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { Commands, Configuration, readConfig, registerCommand } from "./enums";
+import { Commands, Configuration, readConfig, registerCommand } from "./common";
 import {
   INSTALL_SCRIPT,
   IPdmTaskDefinition,
@@ -44,7 +44,7 @@ import {
   startDebugging,
 } from "./tasks";
 
-import { ExplorerCommands } from "./enums";
+import { ExplorerCommands } from "./common";
 import { printChannelOutput } from "./extension";
 import { readPyproject } from "./readPyproject";
 
@@ -89,11 +89,11 @@ export class PyprojectTOML extends TreeItem {
     this.contextValue = "pyprojectTOML";
     if (relativePath) {
       this.resourceUri = Uri.file(
-        path.join(folder!.resourceUri!.fsPath, relativePath, pyprojectName)
+        path.join(folder.resourceUri!.fsPath, relativePath, pyprojectName)
       );
     } else {
       this.resourceUri = Uri.file(
-        path.join(folder!.resourceUri!.fsPath, pyprojectName)
+        path.join(folder.resourceUri!.fsPath, pyprojectName)
       );
     }
     this.iconPath = ThemeIcon.File;
@@ -126,7 +126,7 @@ export class PdmScript extends TreeItem {
     const command: ExplorerCommands =
       name === `${INSTALL_SCRIPT} ` || name === "build "
         ? "run"
-        : readConfig(workspace, Configuration.scriptExplorerAction) || "open";
+        : readConfig(workspace, Configuration.scriptExplorerAction) ?? "open";
 
     const commandList = {
       open: {
@@ -207,10 +207,9 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     private context: ExtensionContext,
     public taskProvider: PdmTaskProvider
   ) {
-    const subscriptions = context.subscriptions;
     this.extensionContext = context;
 
-    subscriptions.push(
+    context.subscriptions.push(
       registerCommand(commands, Commands.runScript, this.runScript, this),
       registerCommand(commands, Commands.debugScript, this.debugScript, this),
       registerCommand(commands, Commands.openScript, this.openScript, this),
@@ -289,7 +288,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       this.findScriptPosition(
         document,
         selection instanceof PdmScript ? selection : undefined
-      ) || new Position(0, 0);
+      ) ?? new Position(0, 0);
     await window.showTextDocument(document, {
       preserveFocus: true,
       selection: new Selection(position, position),
@@ -401,7 +400,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
             workspace,
             Configuration.scriptExplorerExclude,
             location.uri
-          ) || [];
+          ) ?? [];
         excludeConfig.set(
           location.uri.toString(),
           regularExpressionsSetting?.map((value) => RegExp(value))

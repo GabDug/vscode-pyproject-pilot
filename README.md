@@ -29,6 +29,7 @@ For more information about auto detection of Tasks, see the [documentation](http
 The PDM Script Explorer shows the pdm scripts found in your workspace. The explorer view is enabled by the setting `pdm.enableScriptExplorer`. A script can be opened or ran, from the explorer.
 
 ![](static/screenshots/script_explorer.png)
+
 ### Run Scripts from the Editor
 
 The extension supports to run the selected script as a task when editing the `pyproject.toml` file. You can either run a script from
@@ -44,14 +45,19 @@ The extension supports running a script as a task from a folder in the Explorer.
 
 This extension should support multi-root workspaces, and will run scripts in the folder of the file that is currently active.
 
+> [!NOTE]
+> This extension won't be active if your only open a file. YOu must always open a folder or workspace.
+
+
 ## Settings
 
 - `pdm.autoDetect` - Enable detecting scripts as tasks, the default is `on`.
 - `pdm.runQuiet` - Run pdm script with the `--quiet` option, the default is `false`.
 - `pdm.packageManager` - The package manager used to run the scripts: `auto`, `pdm`. The default is `auto`, which detects your package manager based on files in your workspace.
 - `pdm.exclude` - Glob patterns for folders that should be excluded from automatic script detection. The pattern is matched against the **absolute path** of the package.json. For example, to exclude all test folders use '\*\*/test/\*\*'.
-- `pdm.enableScriptExplorer` - Enable an explorer view for PDM scripts.
+- `pdm.enableScriptExplorer` - Enable the explorer view for PDM scripts.
 - `pdm.scriptExplorerAction` - The default click action: `open` or `run`, the default is `open`.
+  -
 - `pdm.enableRunFromFolder` - Enable running PDM scripts from the context menu of folders in Explorer, the default is `false`.
 - `pdm.scriptCodeLens.enable` - Enable/disable the code lenses to run a script, the default is `false`.
 
@@ -80,6 +86,7 @@ _In no particular order. Feel free to contribute!_
 - Exclude some pyproject.toml files from auto detection (e.g. in `venv`, `.pdm-build` folders)
 - CodeLens in lockfile (showing dependencies, dependents, ...)
 - CodeLens on dependencies in `pyproject.toml`
+- Run PDM scripts as tasks, or in the terminal
 
 ## Required extensions
 

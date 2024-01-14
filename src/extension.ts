@@ -16,7 +16,7 @@ import {
   ContextKey,
   registerCommand,
   setContextKey,
-} from "./enums";
+} from "./common";
 import {
   PdmScriptHoverProvider,
   invalidateHoverScriptsCache,
@@ -34,7 +34,7 @@ import { PdmScriptsTreeDataProvider } from "./pdmView";
 let treeDataProvider: PdmScriptsTreeDataProvider | undefined;
 let outputChannel: vscode.OutputChannel | undefined;
 
-function invalidateScriptCaches(echo = false) {
+async function invalidateScriptCaches(echo = true) {
   console.debug("Invalidating script caches");
   invalidateHoverScriptsCache();
   invalidateTasksCache();
@@ -91,47 +91,25 @@ export async function activate(
   }
 
   context.subscriptions.push(
-    registerCommand(vscode.commands, Commands.runScriptFromFolder, (args) => {
-      // If args is not an ExtensioContext, add it
-      printChannelOutput(args);
-      if (args instanceof vscode.Uri) {
-        printChannelOutput("args is instanceof vscode.Uri");
-        return selectAndRunScriptFromFolder(context, [args]);
-      }
-      // Elif args is a list or array
-
-      if (Array.isArray(args)) {
-        printChannelOutput("args is Array.isArray");
+    registerCommand(
+      vscode.commands,
+      Commands.runScriptFromFolder,
+      (args: vscode.Uri | vscode.Uri[]) => {
         return selectAndRunScriptFromFolder(context, args);
       }
-      // Unpack args (which contains context)
-      printChannelOutput("args is not instanceof vscode.Uri");
-      return selectAndRunScriptFromFolder(context, [args]);
-    }),
-    registerCommand(vscode.commands, Commands.runScriptFromFile, (args) => {
-      // If args is not an ExtensioContext, add it
-      if (args instanceof vscode.Uri) {
-        printChannelOutput("args is instanceof vscode.Uri");
+    ),
+    registerCommand(
+      vscode.commands,
+      Commands.runScriptFromFile,
+      (args: vscode.Uri | vscode.Uri[]) => {
         return selectAndRunScriptFromFile(context, args);
       }
-      // Elif args is a list or array
-
-      if (Array.isArray(args)) {
-        printChannelOutput("args is Array.isArray");
-        return selectAndRunScriptFromFile(context, args[0]);
-      }
-      // Unpack args (which contains context)
-      printChannelOutput("args is not instanceof vscode.Uri");
-      return selectAndRunScriptFromFile(context, args);
-    }),
-    registerCommand(vscode.commands, Commands.PdmRefresh, (echo) => {
-      // If we have no arguments, assume we are comming from UI and echo
-      if (typeof echo !== "boolean" || echo === undefined) {
-        echo = true;
-      }
-      invalidateScriptCaches(echo);
-      return Promise.resolve();
-    }),
+    ),
+    registerCommand(
+      vscode.commands,
+      Commands.PdmRefresh,
+      invalidateScriptCaches
+    ),
     registerCommand(vscode.commands, Commands.PdmPackageManager, (args) => {
       if (args instanceof vscode.Uri) {
         return getPackageManager(context, args);
@@ -153,16 +131,14 @@ function registerTaskProvider(
     watcher.onDidChange((_e) => invalidateScriptCaches(false));
     watcher.onDidDelete((_e) => invalidateScriptCaches(false));
     watcher.onDidCreate((_e) => invalidateScriptCaches(false));
-    context.subscriptions.push(watcher);
 
     const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(
       (_e) => invalidateScriptCaches(false)
     );
-    context.subscriptions.push(workspaceWatcher);
 
     taskProvider = new PdmTaskProvider(context);
     const disposable = vscode.tasks.registerTaskProvider("pdm", taskProvider);
-    context.subscriptions.push(disposable);
+    context.subscriptions.push(workspaceWatcher, watcher, disposable);
     return disposable;
   }
   return undefined;
@@ -220,8 +196,8 @@ export const printChannelOutput = (content: any, reveal = false): void => {
     }
   }
   if (!outputChannel) {
-    printChannelOutput("Output channel not initialized for PDM!");
-    printChannelOutput(content);
+    console.error("Output channel not initialized for PDM!");
+    console.info(content);
     return;
   }
   outputChannel.appendLine(`[${getTimeForLogging()}] ${content}`);

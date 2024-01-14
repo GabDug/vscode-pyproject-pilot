@@ -59,7 +59,6 @@ export const readPyproject = (
 
   return {
     scripts: readScripts(document, ast, parsed),
-    // XXX plugins and build will be enabled in a future release
     plugins: readPdmPlugins(document, ast, parsed),
     build: readBuildSystem(document, ast, parsed),
   };
@@ -302,7 +301,7 @@ export function readPdmPlugins(
   ast: AST.TOMLProgram,
   parsed: any
 ): IPdmPluginInfo | undefined {
-  if (!parsed?.tool?.pdm?.plugins || !parsed?.tool?.pdm?.plugins?.length) {
+  if (!parsed?.tool?.pdm?.plugins?.length) {
     return undefined;
   }
 
@@ -347,7 +346,7 @@ export function readBuildSystem(
   /**
    * Only supports table style build-system
    */
-  if (!parsed || !parsed["build-system"]) {
+  if (!parsed?.["build-system"]) {
     return undefined;
   }
 

@@ -24,7 +24,7 @@ import {
   asCommand,
   readConfig,
   registerCommand,
-} from "./enums";
+} from "./common";
 import { IPdmScriptInfo, readPyproject } from "./readPyproject";
 import { createTask, getPackageManager, startDebugging } from "./tasks";
 

@@ -3,24 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as path from "path";
-
 import {
   CodeLens,
   CodeLensProvider,
   Disposable,
   EventEmitter,
   ExtensionContext,
-  Range,
   TextDocument,
-  Uri,
   languages,
   workspace,
 } from "vscode";
-import { Commands, Configuration, asCommand, readConfig } from "./enums";
-import { IPdmScriptInfo, IPyProjectInfo, readPyproject } from "./readPyproject";
+import { Commands, Configuration, asCommand, readConfig } from "./common";
+import { IPyProjectInfo, readPyproject } from "./readPyproject";
 
-import { findPreferredPM } from "./preferred-pm";
 import { printChannelOutput } from "./extension";
 
 const getFreshLensLocation = () =>
@@ -154,7 +149,6 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     }
 
     const title = "$(debug-start) " + "Run script";
-    const cwd = path.dirname(document.uri.fsPath);
     if (this.scriptsLensLocation === "top") {
       printChannelOutput(workspace.getWorkspaceFolder(document.uri));
       printChannelOutput(document.uri);
@@ -163,30 +157,29 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
           scripts_tokens.location.range,
           asCommand({
             title,
-            // FIXME this is the command to override
             command: Commands.runScriptFromFile,
-            // command: 'extension.js-debug.npmScript',
             arguments: [document.uri],
           })
         )
       );
     } else if (this.scriptsLensLocation === "all") {
-      const packageManager = await findPreferredPM(
-        Uri.joinPath(document.uri, "..").fsPath
-      );
       codeLenses.push(
         ...scripts_tokens.scripts.map(
           ({ name, nameRange }) =>
-            new CodeLens(nameRange, {
-              title,
-              // FIXME won't work
-              command: "extension.js-debug.createDebuggerTerminal",
-              arguments: [
-                `${packageManager.name} run ${name}`,
-                workspace.getWorkspaceFolder(document.uri),
-                { cwd },
-              ],
-            })
+            new CodeLens(
+              nameRange,
+              asCommand({
+                title,
+                command: Commands.PdmRunScriptFromHover,
+                tooltip: "Run the script as a task",
+                arguments: [
+                  {
+                    documentUri: document.uri,
+                    script: name,
+                  },
+                ],
+              })
+            )
         )
       );
     }

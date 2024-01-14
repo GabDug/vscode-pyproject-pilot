@@ -8,8 +8,8 @@
 // import * as findUp from 'find-up';
 import * as path from "path";
 
-import { Configuration, readConfig } from "./enums";
 import { Uri, workspace } from "vscode";
+import { Configuration, readConfig } from "./common";
 
 // import * as whichPM from 'which-pm';
 

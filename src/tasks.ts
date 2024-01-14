@@ -29,7 +29,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { Configuration, readConfig } from "./enums";
+import { Configuration, readConfig } from "./common";
 import { findPreferredPM, getPackageManagerPath } from "./preferred-pm";
 import { IPdmScriptReference, readPyproject } from "./readPyproject";
 
@@ -182,7 +182,7 @@ export async function getPackageManager(
   showWarning = true
 ): Promise<string> {
   let packageManagerName =
-    readConfig(workspace, Configuration.packageManager, folder) ||
+    readConfig(workspace, Configuration.packageManager, folder) ??
     ("auto" as string);
   if (packageManagerName === "auto") {
     const { name, multipleLockFilesDetected: multiplePMDetected } =
@@ -394,7 +394,7 @@ export async function providePdmScriptsForPyprojectToml(
       packageManager,
       name,
       ["run", name],
-      folder!,
+      folder,
       pyprojectTomlUri,
       value,
       undefined
@@ -408,7 +408,7 @@ export async function providePdmScriptsForPyprojectToml(
 
   if (
     !(
-      readConfig(workspace, Configuration.scriptExplorerExclude, folder) || []
+      readConfig(workspace, Configuration.scriptExplorerExclude, folder) ?? []
     ).find((e) => e.includes(INSTALL_SCRIPT))
   ) {
     result.push({
@@ -438,7 +438,7 @@ export async function providePdmScriptsForPyprojectToml(
 }
 
 export function getTaskName(script: string, relativePath: string | undefined) {
-  if (relativePath && relativePath.length) {
+  if (relativePath?.length) {
     return `${script} - ${relativePath.substring(0, relativePath.length - 1)}`;
   }
   return script;

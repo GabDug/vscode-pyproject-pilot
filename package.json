@@ -4,7 +4,10 @@
   "description": "Task provider for PDM, a Python project manager.",
   "version": "0.0.1",
   "publisher": "gabdug",
-  "repository": "https://github.com/gabdug/vscode-pdm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gabdug/vscode-pdm"
+  },
   "icon": "static/pdm_icon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -24,6 +27,7 @@
   "scripts": {
     "clean": "node ./scripts/clean.js",
     "lint": "eslint -c .eslintrc.js --ext .ts .",
+    "lint-fix": "eslint -c .eslintrc.js --ext .ts . --fix",
     "pretest": "npm run test-compile && npm install",
     "prettier": "prettier --write '**/*.{ts,json,md,hbs,yml,js}'",
     "_test-compile": "npm run clean && tsc -p ./ && npm run webpack && cp -r ./src/worker ./out",
@@ -339,12 +343,11 @@
           "type": "boolean",
           "default": true,
           "description": "Controls whether the PDM plugin codelens is shown, on tool.pdm.plugins."
-
-        }    ,   "pdm.codelens.pdmBuild": {
+        },
+        "pdm.codelens.pdmBuild": {
           "type": "boolean",
           "default": true,
           "description": "Controls whether the PDM plugin codelens is shown, on build-system."
-
         }
       }
     },
