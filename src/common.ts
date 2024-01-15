@@ -44,6 +44,7 @@ export const enum Configuration {
   // Misc
   pdmPath = "pdm.pdmPath",
   exclude = "pdm.exclude",
+  // XXX: Make sure exclude work
   packageManager = "pdm.packageManager",
   runQuiet = "pdm.runQuiet",
   autoDetect = "pdm.autoDetect",
@@ -71,7 +72,7 @@ export interface IConfigurationTypes {
   [Configuration.autoDetect]: AutoDetect;
   [Configuration.scriptHover]: boolean;
   [Configuration.scriptExplorerExclude]: string[];
-  [Configuration.exclude]: string[] | string;
+  [Configuration.exclude]: string[];
   [Configuration.scriptExplorerAction]: ExplorerCommands;
   [Configuration.enableRunFromFolder]: boolean;
   [Configuration.runQuiet]: boolean;
@@ -87,13 +88,13 @@ export interface IContextKeyTypes {
 export const readConfig = <K extends keyof IConfigurationTypes>(
   wsp: typeof workspace,
   key: K,
-  folder?: ConfigurationScope,
+  folder?: ConfigurationScope
 ) => wsp.getConfiguration(undefined, folder).get<IConfigurationTypes[K]>(key);
 
 export const setContextKey = async <K extends keyof IContextKeyTypes>(
   ns: typeof commands,
   key: K,
-  value: IContextKeyTypes[K] | null,
+  value: IContextKeyTypes[K] | null
 ) => await ns.executeCommand("setContext", key, value);
 
 /**
@@ -103,7 +104,7 @@ export const registerCommand = <K extends keyof ICommandTypes>(
   ns: typeof commands,
   key: K,
   fn: (...args: Parameters<ICommandTypes[K]>) => Thenable<ReturnType<ICommandTypes[K]>>,
-  thisArg?: any,
+  thisArg?: any
 ) => ns.registerCommand(key, fn, thisArg);
 
 /**
@@ -121,3 +122,4 @@ export const asCommand = <K extends keyof ICommandTypes>(command: {
   tooltip?: string;
   arguments: Parameters<ICommandTypes[K]>;
 }): Command => command;
+export const pyprojectName = "pyproject.toml";

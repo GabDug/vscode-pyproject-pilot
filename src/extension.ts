@@ -5,10 +5,10 @@
 
 import * as vscode from "vscode";
 
-import { runSelectedScript, selectAndRunScriptFromFile, selectAndRunScriptFromFolder } from "./commands";
 import { Commands, Configuration, ContextKey, registerCommand, setContextKey } from "./common";
 import { PdmScriptHoverProvider, invalidateHoverScriptsCache } from "./scriptHover";
 import { PdmTaskProvider, getPackageManager, hasPyprojectToml, invalidateTasksCache } from "./tasks";
+import { runSelectedScript, selectAndRunScriptFromFile, selectAndRunScriptFromFolder } from "./commands";
 
 import { PdmScriptLensProvider } from "./pdmCodeLens";
 import { PdmScriptsTreeDataProvider } from "./pdmView";
@@ -54,7 +54,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           treeDataProvider.refresh();
         }
       }
-    }),
+    })
   );
 
   registerHoverProvider(context);
@@ -80,8 +80,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       return Promise.resolve("");
     }),
-    // FIXME There should not be codelens when opening a file
-    new PdmScriptLensProvider(context),
+    // FIXME There should not be codelens when opening a file (not workspace)
+    new PdmScriptLensProvider(context)
   );
 }
 

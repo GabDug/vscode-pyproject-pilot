@@ -106,7 +106,7 @@ export class PdmTaskProvider implements TaskProvider {
         kind,
         cmd,
         _task.scope,
-        pyprojectTomlUri,
+        pyprojectTomlUri
       );
     }
     return undefined;
@@ -170,7 +170,7 @@ export function isWorkspaceFolder(value: any): value is WorkspaceFolder {
 export async function getPackageManager(
   extensionContext: ExtensionContext,
   folder: Uri,
-  showWarning = true,
+  showWarning = true
 ): Promise<string> {
   let packageManagerName = readConfig(workspace, Configuration.packageManager, folder) ?? ("auto" as string);
   if (packageManagerName === "auto") {
@@ -281,21 +281,22 @@ export function isAutoDetectionEnabled(folder?: WorkspaceFolder): boolean {
 
 function isExcluded(folder: WorkspaceFolder, pyprojectTomlUri: Uri) {
   function testForExclusionPattern(path: string, pattern: string): boolean {
+    // XXX Drop minimatch, use vscode glob (relative to what?)
+    // Inspiration https://github.com/microsoft/vscode/blob/main/src/vs/workbench/services/search/common/search.ts#L431
     return minimatch(path, pattern, { dot: true });
   }
 
   const exclude = readConfig(workspace, Configuration.exclude, folder.uri);
   const pyprojectTomlFolder = path.dirname(pyprojectTomlUri.fsPath);
 
-  if (exclude) {
-    if (Array.isArray(exclude)) {
-      for (const pattern of exclude) {
-        if (testForExclusionPattern(pyprojectTomlFolder, pattern)) {
-          return true;
-        }
+  if (exclude?.length) {
+    for (const pattern of exclude) {
+      if (testForExclusionPattern(pyprojectTomlFolder, pattern)) {
+        console.debug(
+          `Ignored pyproject.toml file ${pyprojectTomlUri.fsPath} because it matches the exclude pattern ${pattern}`
+        );
+        return true;
       }
-    } else if (testForExclusionPattern(pyprojectTomlFolder, exclude)) {
-      return true;
     }
   }
   return false;
@@ -303,14 +304,14 @@ function isExcluded(folder: WorkspaceFolder, pyprojectTomlUri: Uri) {
 
 function isDebugScript(script: string): boolean {
   const match = script.match(
-    /--(inspect|debug)(-brk)?(=((\[[0-9a-fA-F:]*\]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+|[a-zA-Z0-9.]*):)?(\d+))?/,
+    /--(inspect|debug)(-brk)?(=((\[[0-9a-fA-F:]*\]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+|[a-zA-Z0-9.]*):)?(\d+))?/
   );
   return match !== null;
 }
 export async function providePdmScriptsForPyprojectToml(
   context: ExtensionContext,
   pyprojectTomlUri: Uri,
-  showWarning: boolean,
+  showWarning: boolean
 ): Promise<ITaskWithLocation[]> {
   const emptyTasks: ITaskWithLocation[] = [];
 
@@ -349,7 +350,7 @@ export async function providePdmScriptsForPyprojectToml(
         folder,
         pyprojectTomlUri,
         "install dependencies from package",
-        [],
+        []
       ),
     });
     if (pyprojectInfo?.build) {
@@ -361,7 +362,7 @@ export async function providePdmScriptsForPyprojectToml(
           folder,
           pyprojectTomlUri,
           `build package with ${pyprojectInfo.build.build_backend}`,
-          [],
+          []
         ),
       });
     }
@@ -383,7 +384,7 @@ export async function createTask(
   folder: WorkspaceFolder,
   pyprojectTomlUri: Uri,
   scriptValue?: string,
-  matcher?: string | string[],
+  matcher?: string | string[]
 ): Promise<Task> {
   let kind: IPdmTaskDefinition;
   if (typeof script === "string") {
@@ -428,7 +429,7 @@ export async function createTask(
     taskName,
     "pdm",
     new ShellExecution(getPackageManagerPath(packageManager), getCommandLine(cmd), { cwd: cwd }),
-    matcher,
+    matcher
   );
   task.detail = scriptValue;
 
@@ -487,7 +488,7 @@ async function exists(file: string): Promise<boolean> {
   return new Promise<boolean>((resolve, _reject) => {
     vscode.workspace.fs.stat(Uri.file(file)).then(
       () => resolve(true),
-      () => resolve(false),
+      () => resolve(false)
     );
   });
 }
@@ -505,14 +506,14 @@ export async function startDebugging(
   context: ExtensionContext,
   scriptName: string,
   cwd: string,
-  folder: WorkspaceFolder,
+  folder: WorkspaceFolder
 ) {
   // FIXME
   commands.executeCommand(
     "extension.js-debug.createDebuggerTerminal",
     `${await getPackageManager(context, folder.uri)} run ${scriptName}`,
     folder,
-    { cwd },
+    { cwd }
   );
 }
 

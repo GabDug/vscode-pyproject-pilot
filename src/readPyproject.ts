@@ -1,6 +1,6 @@
-import { getStaticTOMLValue, parseTOML } from "toml-eslint-parser";
 import { Location, Position, Range, TextDocument } from "vscode";
 import { getKeyStr, getPositionFromAst, getRangeFromAstLoc } from "./tomlUtils";
+import { getStaticTOMLValue, parseTOML } from "toml-eslint-parser";
 
 import type { AST } from "toml-eslint-parser";
 import { printChannelOutput } from "./extension";
@@ -50,18 +50,19 @@ export const readPyproject = (document: TextDocument, buffer = document.getText(
     filePath: document.uri.toString(),
   });
   const parsed = getStaticTOMLValue(ast);
+  console.error(parsed);
 
   printChannelOutput("> Parsed TOML");
   printChannelOutput(parsed);
 
   return {
-    scripts: readScripts(document, ast, parsed),
+    scripts: readPdmScripts(document, ast, parsed),
     plugins: readPdmPlugins(document, ast, parsed),
     build: readBuildSystem(document, ast, parsed),
   };
 };
 
-export function readScripts(document: TextDocument, ast: AST.TOMLProgram, parsed: any): IPdmScriptInfo | undefined {
+export function readPdmScripts(document: TextDocument, ast: AST.TOMLProgram, parsed: any): IPdmScriptInfo | undefined {
   // If parsed has no scripts
   if (!parsed?.tool?.pdm?.scripts) {
     console.debug(`No scripts found in ${document.uri.toString()}`);
@@ -166,15 +167,11 @@ export function readScripts(document: TextDocument, ast: AST.TOMLProgram, parsed
     console.error("FOUND SCRIPTS");
     console.error(scriptsNode);
     scriptsNode.body?.forEach((script) => {
-      // console.debug(script);
-
       if (script.type !== "TOMLKeyValue") {
         console.error("script is not TOMLKeyValue");
         console.error(script);
         return;
       }
-
-      // FIXME Support TOMLInlineTables as well
 
       const key = getKeyStr(script.key.keys[0]);
       if (!key) {
@@ -312,7 +309,7 @@ export function readPdmPlugins(document: TextDocument, ast: AST.TOMLProgram, par
 export function readBuildSystem(
   document: TextDocument,
   ast: AST.TOMLProgram,
-  parsed: any,
+  parsed: any
 ): undefined | IPyprojectBuildInfo {
   /**
    * Only supports table style build-system

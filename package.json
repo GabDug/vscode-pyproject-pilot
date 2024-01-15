@@ -269,15 +269,13 @@
           "description": "Which package manager to use for installing dependencies. Only PDM is supported for now."
         },
         "pdm.exclude": {
-          "type": [
-            "string",
-            "array"
-          ],
+          "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Configure glob patterns for folders that should be excluded from automatic script detection.",
-          "scope": "resource"
+          "markdownDescription": "Configure glob patterns for folders that should be excluded from automatic script detection.\nExample: `\"**/excludeFolders\",\"**/excludeSubFolders/**\"`",
+          "scope": "resource",
+          "default": []
         },
         "pdm.enableRunFromFolder": {
           "type": "boolean",

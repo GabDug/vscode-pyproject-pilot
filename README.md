@@ -67,8 +67,8 @@ This extension should support multi-root workspaces, and will run scripts in the
 
 _In no particular order. Feel free to contribute!_
 
-- [x] Setting for custom PDM interpreter path
-- [x] Support for `help` arguments in `pdm.scripts`?
+- [X] Setting for custom PDM interpreter path
+- [X] Support for `help` arguments in `pdm.scripts`?
 - Expose `pdm` commands as tasks (install, update, build, ...)
   - [ ] build: only if `[build-system]` is set
   - [ ] install plugins: only if `[tool.pdm.plugins]` is set
