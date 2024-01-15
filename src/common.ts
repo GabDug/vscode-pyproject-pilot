@@ -6,6 +6,8 @@
 import { Command, ConfigurationScope, Uri, commands, workspace } from "vscode";
 import type { PdmScript, PyprojectTOML } from "./pdmView";
 
+export const pyprojectName = "pyproject.toml";
+
 export const enum Commands {
   // Extension
   runCommand = "pdm.runCommand",
@@ -125,4 +127,3 @@ export const asCommand = <K extends keyof ICommandTypes>(command: {
   tooltip?: string;
   arguments: Parameters<ICommandTypes[K]>;
 }): Command => command;
-export const pyprojectName = "pyproject.toml";
