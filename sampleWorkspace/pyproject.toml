@@ -1,5 +1,8 @@
-build-system = { requires = ["test"] }
 
+
+[build-system]
+requires = ["pdm>=1.9.0"]
+build-backend = "pdm.build-backend"
 [tool]
 [tool.pdm]
 plugins = ["sync-pre-commit-lock"]
@@ -17,12 +20,14 @@ start_server_with_help.help = "Starts the server with help"
 # lint-ruff = {cmd="ruff .", help="Run ruff linter"}
 # lint = {composite= ["lint-ruff", "lint-pylint", "lint-mypy"], help="Run all linters (ruff, pylint, mypy)."}
 # foobar = {call = "foo_package.bar_module:main"}
-# [tool.pdm.scripts.format]
-# shell = """
-#     isort tox_pdm tests
-#     black tox_pdm tests
-# """
+[tool.pdm.scripts.format]
+shell = """
+    isort tox_pdm tests
+    black tox_pdm tests
+"""
 
+[tool.pdm.scripts."all_args_quoted"]
+composite = ["lint mypackage/", "test -v tests/"]
 
 [tool.pdm.build]
 
@@ -30,11 +35,8 @@ start_server_with_help.help = "Starts the server with help"
 name = "test"
 version = "0.0.1a1"
 description = ""
-authors = [
-    {name = "Gabriel Dugny", email = "git@dugny.me"},
-]
+authors = [{ name = "Gabriel Dugny", email = "git@dugny.me" }]
 dependencies = []
 requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "MIT"}
-
+license = { text = "MIT" }

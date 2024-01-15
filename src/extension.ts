@@ -5,28 +5,10 @@
 
 import * as vscode from "vscode";
 
-import {
-  runSelectedScript,
-  selectAndRunScriptFromFile,
-  selectAndRunScriptFromFolder,
-} from "./commands";
-import {
-  Commands,
-  Configuration,
-  ContextKey,
-  registerCommand,
-  setContextKey,
-} from "./common";
-import {
-  PdmScriptHoverProvider,
-  invalidateHoverScriptsCache,
-} from "./scriptHover";
-import {
-  PdmTaskProvider,
-  getPackageManager,
-  hasPyprojectToml,
-  invalidateTasksCache,
-} from "./tasks";
+import { runSelectedScript, selectAndRunScriptFromFile, selectAndRunScriptFromFolder } from "./commands";
+import { Commands, Configuration, ContextKey, registerCommand, setContextKey } from "./common";
+import { PdmScriptHoverProvider, invalidateHoverScriptsCache } from "./scriptHover";
+import { PdmTaskProvider, getPackageManager, hasPyprojectToml, invalidateTasksCache } from "./tasks";
 
 import { PdmScriptLensProvider } from "./pdmCodeLens";
 import { PdmScriptsTreeDataProvider } from "./pdmView";
@@ -48,9 +30,7 @@ async function invalidateScriptCaches(echo = true) {
   console.debug("Invalidated script caches");
 }
 
-export async function activate(
-  context: vscode.ExtensionContext
-): Promise<void> {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   outputChannel = vscode.window.createOutputChannel("PDM");
   printChannelOutput("Extension 'pdm' is now active!");
 
@@ -74,42 +54,25 @@ export async function activate(
           treeDataProvider.refresh();
         }
       }
-    })
+    }),
   );
 
   registerHoverProvider(context);
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      Commands.runSelectedScript,
-      runSelectedScript
-    )
-  );
+  context.subscriptions.push(vscode.commands.registerCommand(Commands.runSelectedScript, runSelectedScript));
 
   if (await hasPyprojectToml()) {
     setContextKey(vscode.commands, ContextKey.showScriptExplorer, true);
   }
 
   context.subscriptions.push(
-    registerCommand(
-      vscode.commands,
-      Commands.runScriptFromFolder,
-      (args: vscode.Uri | vscode.Uri[]) => {
-        return selectAndRunScriptFromFolder(context, args);
-      }
-    ),
-    registerCommand(
-      vscode.commands,
-      Commands.runScriptFromFile,
-      (args: vscode.Uri | vscode.Uri[]) => {
-        return selectAndRunScriptFromFile(context, args);
-      }
-    ),
-    registerCommand(
-      vscode.commands,
-      Commands.PdmRefresh,
-      invalidateScriptCaches
-    ),
+    registerCommand(vscode.commands, Commands.runScriptFromFolder, (args: vscode.Uri | vscode.Uri[]) => {
+      return selectAndRunScriptFromFolder(context, args);
+    }),
+    registerCommand(vscode.commands, Commands.runScriptFromFile, (args: vscode.Uri | vscode.Uri[]) => {
+      return selectAndRunScriptFromFile(context, args);
+    }),
+    registerCommand(vscode.commands, Commands.PdmRefresh, invalidateScriptCaches),
     registerCommand(vscode.commands, Commands.PdmPackageManager, (args) => {
       if (args instanceof vscode.Uri) {
         return getPackageManager(context, args);
@@ -117,24 +80,20 @@ export async function activate(
 
       return Promise.resolve("");
     }),
-    new PdmScriptLensProvider(context)
+    // FIXME There should not be codelens when opening a file
+    new PdmScriptLensProvider(context),
   );
 }
 
 let taskProvider: PdmTaskProvider;
-function registerTaskProvider(
-  context: vscode.ExtensionContext
-): vscode.Disposable | undefined {
+function registerTaskProvider(context: vscode.ExtensionContext): vscode.Disposable | undefined {
   if (vscode.workspace.workspaceFolders) {
-    const watcher =
-      vscode.workspace.createFileSystemWatcher("**/pyproject.toml");
+    const watcher = vscode.workspace.createFileSystemWatcher("**/pyproject.toml");
     watcher.onDidChange((_e) => invalidateScriptCaches(false));
     watcher.onDidDelete((_e) => invalidateScriptCaches(false));
     watcher.onDidCreate((_e) => invalidateScriptCaches(false));
 
-    const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(
-      (_e) => invalidateScriptCaches(false)
-    );
+    const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders((_e) => invalidateScriptCaches(false));
 
     taskProvider = new PdmTaskProvider(context);
     const disposable = vscode.tasks.registerTaskProvider("pdm", taskProvider);
@@ -144,14 +103,9 @@ function registerTaskProvider(
   return undefined;
 }
 
-function registerExplorer(
-  context: vscode.ExtensionContext
-): PdmScriptsTreeDataProvider | undefined {
+function registerExplorer(context: vscode.ExtensionContext): PdmScriptsTreeDataProvider | undefined {
   if (vscode.workspace.workspaceFolders) {
-    const treeDataProvider = new PdmScriptsTreeDataProvider(
-      context,
-      taskProvider!
-    );
+    const treeDataProvider = new PdmScriptsTreeDataProvider(context, taskProvider!);
     const view = vscode.window.createTreeView("pdm", {
       treeDataProvider: treeDataProvider,
       showCollapseAll: true,
@@ -162,9 +116,7 @@ function registerExplorer(
   return undefined;
 }
 
-function registerHoverProvider(
-  context: vscode.ExtensionContext
-): PdmScriptHoverProvider | undefined {
+function registerHoverProvider(context: vscode.ExtensionContext): PdmScriptHoverProvider | undefined {
   if (vscode.workspace.workspaceFolders) {
     const pdmSelector: vscode.DocumentSelector = {
       language: "toml",
@@ -172,9 +124,7 @@ function registerHoverProvider(
       pattern: "**/pyproject.toml",
     };
     const provider = new PdmScriptHoverProvider(context);
-    context.subscriptions.push(
-      vscode.languages.registerHoverProvider(pdmSelector, provider)
-    );
+    context.subscriptions.push(vscode.languages.registerHoverProvider(pdmSelector, provider));
     return provider;
   }
   return undefined;

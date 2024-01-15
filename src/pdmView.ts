@@ -80,21 +80,14 @@ export class PyprojectTOML extends TreeItem {
   }
 
   constructor(folder: Folder, relativePath: string) {
-    super(
-      PyprojectTOML.getLabel(relativePath),
-      TreeItemCollapsibleState.Expanded
-    );
+    super(PyprojectTOML.getLabel(relativePath), TreeItemCollapsibleState.Expanded);
     this.folder = folder;
     this.path = relativePath;
     this.contextValue = "pyprojectTOML";
     if (relativePath) {
-      this.resourceUri = Uri.file(
-        path.join(folder.resourceUri!.fsPath, relativePath, pyprojectName)
-      );
+      this.resourceUri = Uri.file(path.join(folder.resourceUri!.fsPath, relativePath, pyprojectName));
     } else {
-      this.resourceUri = Uri.file(
-        path.join(folder.resourceUri!.fsPath, pyprojectName)
-      );
+      this.resourceUri = Uri.file(path.join(folder.resourceUri!.fsPath, pyprojectName));
     }
     this.iconPath = ThemeIcon.File;
   }
@@ -109,17 +102,10 @@ export class PdmScript extends TreeItem {
   package: PyprojectTOML;
   taskLocation?: Location;
 
-  constructor(
-    _context: ExtensionContext,
-    pyprojectToml: PyprojectTOML,
-    task: ITaskWithLocation
-  ) {
+  constructor(_context: ExtensionContext, pyprojectToml: PyprojectTOML, task: ITaskWithLocation) {
     const name =
       pyprojectToml.path.length > 0
-        ? task.task.name.substring(
-            0,
-            task.task.name.length - pyprojectToml.path.length - 2
-          )
+        ? task.task.name.substring(0, task.task.name.length - pyprojectToml.path.length - 2)
         : task.task.name;
     super(name, TreeItemCollapsibleState.None);
     this.taskLocation = task.location;
@@ -136,10 +122,7 @@ export class PdmScript extends TreeItem {
           this.taskLocation?.uri,
           this.taskLocation
             ? ({
-                selection: new Range(
-                  this.taskLocation.range.start,
-                  this.taskLocation.range.end
-                ),
+                selection: new Range(this.taskLocation.range.start, this.taskLocation.range.end),
               } as TextDocumentShowOptions)
             : undefined,
         ],
@@ -198,14 +181,12 @@ type TaskTree = Folder[] | PyprojectTOML[] | NoScripts[];
 export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private taskTree: TaskTree | null = null;
   private extensionContext: ExtensionContext;
-  private _onDidChangeTreeData: EventEmitter<TreeItem | null> =
-    new EventEmitter<TreeItem | null>();
-  readonly onDidChangeTreeData: Event<TreeItem | null> =
-    this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData: EventEmitter<TreeItem | null> = new EventEmitter<TreeItem | null>();
+  readonly onDidChangeTreeData: Event<TreeItem | null> = this._onDidChangeTreeData.event;
 
   constructor(
     private context: ExtensionContext,
-    public taskProvider: PdmTaskProvider
+    public taskProvider: PdmTaskProvider,
   ) {
     this.extensionContext = context;
 
@@ -213,7 +194,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       registerCommand(commands, Commands.runScript, this.runScript, this),
       registerCommand(commands, Commands.debugScript, this.debugScript, this),
       registerCommand(commands, Commands.openScript, this.openScript, this),
-      registerCommand(commands, Commands.runInstall, this.runInstall, this)
+      registerCommand(commands, Commands.runInstall, this.runInstall, this),
     );
   }
 
@@ -228,7 +209,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       this.extensionContext,
       script.task.definition.script,
       path.dirname(script.package.resourceUri!.fsPath),
-      script.getFolder()
+      script.getFolder(),
     );
   }
 
@@ -242,10 +223,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       return scripts.location.range.start;
     }
 
-    const found = scripts.scripts.find(
-      (s) =>
-        getTaskName(s.name, script.task.definition.path) === script.task.name
-    );
+    const found = scripts.scripts.find((s) => getTaskName(s.name, script.task.definition.path) === script.task.name);
     return found?.nameRange.start;
   }
 
@@ -258,17 +236,13 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       return;
     }
     const task = await createTask(
-      await getPackageManager(
-        this.context,
-        selection.folder.workspaceFolder.uri,
-        true
-      ),
-      "install",
-      ["install"],
+      await getPackageManager(this.context, selection.folder.workspaceFolder.uri, true),
+      INSTALL_SCRIPT,
+      [INSTALL_SCRIPT],
       selection.folder.workspaceFolder,
       uri,
       undefined,
-      []
+      [],
     );
     tasks.executeTask(task);
   }
@@ -285,10 +259,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     }
     const document: TextDocument = await workspace.openTextDocument(uri);
     const position =
-      this.findScriptPosition(
-        document,
-        selection instanceof PdmScript ? selection : undefined
-      ) ?? new Position(0, 0);
+      this.findScriptPosition(document, selection instanceof PdmScript ? selection : undefined) ?? new Position(0, 0);
     await window.showTextDocument(document, {
       preserveFocus: true,
       selection: new Selection(position, position),
@@ -327,8 +298,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
         const taskTree = this.buildTaskTree(taskItems);
         this.taskTree = this.sortTaskTree(taskTree);
         if (this.taskTree.length === 0) {
-          let message =
-            "No scripts found. Make sure you have an explicit `[tool.pdm.scripts]` section.";
+          let message = "No scripts found. Make sure you have an explicit `[tool.pdm.scripts]` section.";
           if (!isAutoDetectionEnabled()) {
             message = `The setting "${Configuration.autoDetect}" is "off".`;
           }
@@ -361,9 +331,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     return fullName === task.name;
   }
 
-  private getTaskTreeItemLabel(
-    taskTreeLabel: string | TreeItemLabel | undefined
-  ): string {
+  private getTaskTreeItemLabel(taskTreeLabel: string | TreeItemLabel | undefined): string {
     if (taskTreeLabel === undefined) {
       return "";
     }
@@ -396,43 +364,31 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       const location = each.location;
       if (location && !excludeConfig.has(location.uri.toString())) {
         const regularExpressionsSetting =
-          readConfig(
-            workspace,
-            Configuration.scriptExplorerExclude,
-            location.uri
-          ) ?? [];
-        excludeConfig.set(
-          location.uri.toString(),
-          regularExpressionsSetting?.map((value) => RegExp(value))
-        );
+          readConfig(workspace, Configuration.scriptExplorerExclude, location.uri) ?? [];
+        excludeConfig.set(location.uri.toString(), regularExpressionsSetting?.map((value) => RegExp(value)));
       }
       const regularExpressions =
-        location && excludeConfig.has(location.uri.toString())
-          ? excludeConfig.get(location.uri.toString())
-          : undefined;
+        location && excludeConfig.has(location.uri.toString()) ? excludeConfig.get(location.uri.toString()) : undefined;
 
       if (
         regularExpressions &&
         regularExpressions.some((regularExpression) =>
-          (each.task.definition as IPdmTaskDefinition).script.match(
-            regularExpression
-          )
+          (each.task.definition as IPdmTaskDefinition).script.match(regularExpression),
         )
       ) {
         return;
       }
 
       if (
-        isWorkspaceFolder(each.task.scope) &&
-        !this.isInstallTask(each.task)
+        isWorkspaceFolder(each.task.scope) // &&
+        // !this.isInstallTask(each.task)
       ) {
         folder = folders.get(each.task.scope.name);
         if (!folder) {
           folder = new Folder(each.task.scope);
           folders.set(each.task.scope.name, folder);
         }
-        const definition: IPdmTaskDefinition = each.task
-          .definition as IPdmTaskDefinition;
+        const definition: IPdmTaskDefinition = each.task.definition as IPdmTaskDefinition;
         const relativePath = definition.path ? definition.path : "";
         const fullPath = path.join(each.task.scope.name, relativePath);
         pyprojectToml = packages.get(fullPath);
@@ -441,15 +397,17 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
           folder.addPyproject(pyprojectToml);
           packages.set(fullPath, pyprojectToml);
         }
-        const script = new PdmScript(
-          this.extensionContext,
-          pyprojectToml,
-          each
-        );
+        const script = new PdmScript(this.extensionContext, pyprojectToml, each);
         printChannelOutput(script);
         pyprojectToml.addScript(script);
+      } else {
+        console.log("No workspace folder found");
+        console.log(each);
+        console.log(each.task);
+        console.log(each.task.scope);
       }
     });
+
     if (folders.size === 1) {
       return [...packages.values()];
     }

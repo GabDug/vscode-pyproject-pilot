@@ -43,10 +43,7 @@ export interface IPyProjectInfo {
   // dev-deps
 }
 
-export const readPyproject = (
-  document: TextDocument,
-  buffer = document.getText()
-): IPyProjectInfo | undefined => {
+export const readPyproject = (document: TextDocument, buffer = document.getText()): IPyProjectInfo | undefined => {
   printChannelOutput(`Reading file: ${document.uri.toString()}`);
 
   const ast: AST.TOMLProgram = parseTOML(buffer, {
@@ -64,11 +61,7 @@ export const readPyproject = (
   };
 };
 
-export function readScripts(
-  document: TextDocument,
-  ast: AST.TOMLProgram,
-  parsed: any
-): IPdmScriptInfo | undefined {
+export function readScripts(document: TextDocument, ast: AST.TOMLProgram, parsed: any): IPdmScriptInfo | undefined {
   // If parsed has no scripts
   if (!parsed?.tool?.pdm?.scripts) {
     console.debug(`No scripts found in ${document.uri.toString()}`);
@@ -142,9 +135,7 @@ export function readScripts(
   const scriptsNode = topBodyTable.body?.find((node) => {
     if (node.type === "TOMLTable") {
       // If resolved key is == ["tool","pdm"]
-      if (
-        node.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()
-      ) {
+      if (node.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()) {
         return true;
       }
     }
@@ -154,9 +145,7 @@ export function readScripts(
     if (node.type === "TOMLTable") {
       // If resolved key is == ["tool","pdm", "scripts", *]
       if (
-        node.resolvedKey
-          .toString()
-          .startsWith(["tool", "pdm", "scripts"].toString()) &&
+        node.resolvedKey.toString().startsWith(["tool", "pdm", "scripts"].toString()) &&
         node.resolvedKey.length > 3
       ) {
         return true;
@@ -166,18 +155,14 @@ export function readScripts(
   });
 
   if (!scriptsNode || !(scriptsNode.type === "TOMLTable")) {
-    console.debug(
-      `No scripts found in ${document.uri.toString()}: node undefined`
-    );
+    console.debug(`No scripts found in ${document.uri.toString()}: node undefined`);
     return undefined;
   }
   console.error(scriptsNode);
   start = getPositionFromAst(scriptsNode.loc.start);
   const end = getPositionFromAst(scriptsNode.loc.end);
 
-  if (
-    scriptsNode.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()
-  ) {
+  if (scriptsNode.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()) {
     console.error("FOUND SCRIPTS");
     console.error(scriptsNode);
     scriptsNode.body?.forEach((script) => {
@@ -209,20 +194,11 @@ export function readScripts(
       }
 
       const sub_key = getKeyStr(script.key.keys[1]);
-      if (
-        sub_key === "help" &&
-        script.value?.type === "TOMLValue" &&
-        script.value.kind === "string"
-      ) {
+      if (sub_key === "help" && script.value?.type === "TOMLValue" && script.value.kind === "string") {
         scriptsHash[key].help = script.value?.value;
         return;
       }
-      if (
-        sub_key === "shell" ||
-        sub_key === "cmd" ||
-        sub_key === "composite" ||
-        sub_key === "call"
-      ) {
+      if (sub_key === "shell" || sub_key === "cmd" || sub_key === "composite" || sub_key === "call") {
         scriptsHash[key].exec_type = sub_key;
         scriptsHash[key].valueRange = getRangeFromAstLoc(script.value.loc);
         scriptsHash[key].nameRange = getRangeFromAstLoc(script.key.loc);
@@ -254,7 +230,8 @@ export function readScripts(
       scriptsHash[key].nameRange = getRangeFromAstLoc(subScriptNode.key.loc);
     });
   }
-
+  console.error("DDDSDD FSDHFSDFHJDF");
+  console.warn(scriptsHash);
   // Get all the scripts from our hash
   Object.keys(scriptsHash).forEach((key) => {
     scripts.push(scriptsHash[key] as IPdmScriptReference);
@@ -282,9 +259,7 @@ export function readScripts(
 
   // Return the scripts
   if (start === undefined) {
-    console.debug(
-      `No scripts found in ${document.uri.toString()}: start undefined`
-    );
+    console.debug(`No scripts found in ${document.uri.toString()}: start undefined`);
     return undefined;
   }
 
@@ -296,11 +271,7 @@ export function readScripts(
   return scriptData;
 }
 
-export function readPdmPlugins(
-  document: TextDocument,
-  ast: AST.TOMLProgram,
-  parsed: any
-): IPdmPluginInfo | undefined {
+export function readPdmPlugins(document: TextDocument, ast: AST.TOMLProgram, parsed: any): IPdmPluginInfo | undefined {
   if (!parsed?.tool?.pdm?.plugins?.length) {
     return undefined;
   }
@@ -341,7 +312,7 @@ export function readPdmPlugins(
 export function readBuildSystem(
   document: TextDocument,
   ast: AST.TOMLProgram,
-  parsed: any
+  parsed: any,
 ): undefined | IPyprojectBuildInfo {
   /**
    * Only supports table style build-system
@@ -364,10 +335,7 @@ export function readBuildSystem(
   }
 
   return {
-    location: new Location(
-      document.uri,
-      getRangeFromAstLoc(build_system_node.loc)
-    ),
+    location: new Location(document.uri, getRangeFromAstLoc(build_system_node.loc)),
     requires: parsed["build-system"]?.requires,
     build_backend: build_backend,
   };

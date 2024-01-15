@@ -27,9 +27,7 @@ async function pathExists(filePath: string) {
   return true;
 }
 
-async function isPoetryPreffered(
-  pkgPath: string
-): Promise<PreferredProperties> {
+async function isPoetryPreffered(pkgPath: string): Promise<PreferredProperties> {
   if (await pathExists(path.join(pkgPath, "poetry.lock"))) {
     return { isPreferred: true, hasLockfile: true };
   }
@@ -42,9 +40,7 @@ async function isPDMPreferred(pkgPath: string): Promise<PreferredProperties> {
   return { isPreferred: lockfileExists, hasLockfile: lockfileExists };
 }
 
-export async function findPreferredPM(
-  pkgPath: string
-): Promise<{ name: string; multipleLockFilesDetected: boolean }> {
+export async function findPreferredPM(pkgPath: string): Promise<{ name: string; multipleLockFilesDetected: boolean }> {
   const detectedPackageManagerNames: string[] = [];
   const detectedPackageManagerProperties: PreferredProperties[] = [];
 
@@ -68,9 +64,7 @@ export async function findPreferredPM(
   // }
 
   let lockfilesCount = 0;
-  detectedPackageManagerProperties.forEach(
-    (detected) => (lockfilesCount += detected.hasLockfile ? 1 : 0)
-  );
+  detectedPackageManagerProperties.forEach((detected) => (lockfilesCount += detected.hasLockfile ? 1 : 0));
 
   return {
     name: detectedPackageManagerNames[0] || "pdm",

@@ -18,12 +18,9 @@ import { IPyProjectInfo, readPyproject } from "./readPyproject";
 
 import { printChannelOutput } from "./extension";
 
-const getFreshLensLocation = () =>
-  readConfig(workspace, Configuration.ScriptsConfigKey);
-const getFreshPluginsLocation = () =>
-  readConfig(workspace, Configuration.PluginsConfigKey);
-const getFreshBuildLocation = () =>
-  readConfig(workspace, Configuration.BuildConfigKey);
+const getFreshLensLocation = () => readConfig(workspace, Configuration.ScriptsConfigKey);
+const getFreshPluginsLocation = () => readConfig(workspace, Configuration.PluginsConfigKey);
+const getFreshBuildLocation = () => readConfig(workspace, Configuration.BuildConfigKey);
 /**
  * Pdm script lens provider implementation. Can show a "Run script" text above any
  * pdm script, or the pdm scripts section.
@@ -63,8 +60,8 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
           pattern: "**/{pyproject.toml,*.pyproject.toml}",
           scheme: "file",
         },
-        this
-      )
+        this,
+      ),
     );
   }
 
@@ -86,11 +83,7 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     return codeLenses;
   }
 
-  private providePdmBuildCodeLenses(
-    codeLenses: CodeLens[],
-    pyproject: IPyProjectInfo,
-    document: TextDocument
-  ) {
+  private providePdmBuildCodeLenses(codeLenses: CodeLens[], pyproject: IPyProjectInfo, document: TextDocument) {
     if (!this.buildLens) {
       return;
     }
@@ -105,16 +98,12 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
           title: "$(debug-start) " + "Build package",
           command: Commands.runScriptFromFile,
           arguments: [document.uri],
-        })
-      )
+        }),
+      ),
     );
   }
 
-  private providePdmPluginsCodeLenses(
-    codeLenses: CodeLens[],
-    pyproject: IPyProjectInfo,
-    document: TextDocument
-  ) {
+  private providePdmPluginsCodeLenses(codeLenses: CodeLens[], pyproject: IPyProjectInfo, document: TextDocument) {
     if (!this.pluginsLens) {
       return;
     }
@@ -124,21 +113,28 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     codeLenses.push(
       new CodeLens(
         pyproject.plugins.location.range,
+        // asCommand({
+        //   // XXX Pluralize
+        //   title: "$(debug-start) " + "Install PDM plugins",
+        //   command: Commands.runScriptFromFile,
+        //   arguments: [document.uri],
+        // })
         asCommand({
-          // XXX Pluralize
           title: "$(debug-start) " + "Install PDM plugins",
-          command: Commands.runScriptFromFile,
-          arguments: [document.uri],
-        })
-      )
+          command: Commands.PdmRunScriptFromHover,
+          tooltip: "Run the script as a task",
+          arguments: [
+            {
+              documentUri: document.uri,
+              script: "install_plugins",
+            },
+          ],
+        }),
+      ),
     );
   }
 
-  private async providePdmScriptsCodeLenses(
-    document: TextDocument,
-    codeLenses: CodeLens[],
-    project: IPyProjectInfo
-  ) {
+  private async providePdmScriptsCodeLenses(document: TextDocument, codeLenses: CodeLens[], project: IPyProjectInfo) {
     if (this.scriptsLensLocation === "never") {
       return [];
     }
@@ -159,8 +155,8 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
             title,
             command: Commands.runScriptFromFile,
             arguments: [document.uri],
-          })
-        )
+          }),
+        ),
       );
     } else if (this.scriptsLensLocation === "all") {
       codeLenses.push(
@@ -178,9 +174,9 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
                     script: name,
                   },
                 ],
-              })
-            )
-        )
+              }),
+            ),
+        ),
       );
     }
   }

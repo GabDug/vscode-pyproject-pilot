@@ -18,13 +18,7 @@ import {
   tasks,
   workspace,
 } from "vscode";
-import {
-  Commands,
-  Configuration,
-  asCommand,
-  readConfig,
-  registerCommand,
-} from "./common";
+import { Commands, Configuration, asCommand, readConfig, registerCommand } from "./common";
 import { IPdmScriptInfo, readPyproject } from "./readPyproject";
 import { createTask, getPackageManager, startDebugging } from "./tasks";
 
@@ -50,18 +44,8 @@ export class PdmScriptHoverProvider implements HoverProvider {
     const isEnabled = () => !!readConfig(workspace, Configuration.scriptHover);
     this.enabled = isEnabled();
     context.subscriptions.push(
-      registerCommand(
-        commands,
-        Commands.PdmRunScriptFromHover,
-        this.runScriptFromHover,
-        this
-      ),
-      registerCommand(
-        commands,
-        Commands.PdmDebugScriptFromHover,
-        this.debugScriptFromHover,
-        this
-      ),
+      registerCommand(commands, Commands.PdmRunScriptFromHover, this.runScriptFromHover, this),
+      registerCommand(commands, Commands.PdmDebugScriptFromHover, this.debugScriptFromHover, this),
       workspace.onDidChangeTextDocument((e) => {
         invalidateHoverScriptsCache(e.document);
       }),
@@ -69,15 +53,11 @@ export class PdmScriptHoverProvider implements HoverProvider {
         if (e.affectsConfiguration(Configuration.scriptHover)) {
           this.enabled = isEnabled();
         }
-      })
+      }),
     );
   }
 
-  public provideHover(
-    document: TextDocument,
-    position: Position,
-    _token: CancellationToken
-  ): ProviderResult<Hover> {
+  public provideHover(document: TextDocument, position: Position, _token: CancellationToken): ProviderResult<Hover> {
     if (!this.enabled) {
       return;
     }
@@ -93,9 +73,7 @@ export class PdmScriptHoverProvider implements HoverProvider {
       if (nameRange.contains(position)) {
         const contents: MarkdownString = new MarkdownString();
         contents.isTrusted = true;
-        contents.appendMarkdown(
-          this.createRunScriptMarkdown(name, document.uri)
-        );
+        contents.appendMarkdown(this.createRunScriptMarkdown(name, document.uri));
         hover = new Hover(contents);
       }
     });
@@ -114,7 +92,7 @@ export class PdmScriptHoverProvider implements HoverProvider {
             script: script,
           },
         ],
-      })
+      }),
     );
   }
 
@@ -137,16 +115,13 @@ export class PdmScriptHoverProvider implements HoverProvider {
         script,
         ["run", script],
         folder,
-        documentUri
+        documentUri,
       );
       await tasks.executeTask(task);
     }
   }
 
-  public async debugScriptFromHover(args: {
-    script: string;
-    documentUri: Uri;
-  }) {
+  public async debugScriptFromHover(args: { script: string; documentUri: Uri }) {
     const script = args.script;
     const documentUri = args.documentUri;
     const folder = workspace.getWorkspaceFolder(documentUri);
