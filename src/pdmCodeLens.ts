@@ -60,8 +60,8 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
           pattern: "**/{pyproject.toml,*.pyproject.toml}",
           scheme: "file",
         },
-        this,
-      ),
+        this
+      )
     );
   }
 
@@ -94,12 +94,11 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
       new CodeLens(
         pyproject.build.location.range,
         asCommand({
-          // XXX Pluralize
           title: "$(debug-start) " + "Build package",
           command: Commands.runScriptFromFile,
           arguments: [document.uri],
-        }),
-      ),
+        })
+      )
     );
   }
 
@@ -129,8 +128,8 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
               script: "install_plugins",
             },
           ],
-        }),
-      ),
+        })
+      )
     );
   }
 
@@ -155,8 +154,8 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
             title,
             command: Commands.runScriptFromFile,
             arguments: [document.uri],
-          }),
-        ),
+          })
+        )
       );
     } else if (this.scriptsLensLocation === "all") {
       codeLenses.push(
@@ -174,9 +173,9 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
                     script: name,
                   },
                 ],
-              }),
-            ),
-        ),
+              })
+            )
+        )
       );
     }
   }

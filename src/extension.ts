@@ -8,7 +8,6 @@ import * as vscode from "vscode";
 import { Commands, Configuration, ContextKey, registerCommand, setContextKey } from "./common";
 import { PdmScriptHoverProvider, invalidateHoverScriptsCache } from "./scriptHover";
 import { PdmTaskProvider, getPackageManager, hasPyprojectToml, invalidateTasksCache } from "./tasks";
-import { runSelectedScript, selectAndRunScriptFromFile, selectAndRunScriptFromFolder } from "./commands";
 
 import { PdmScriptLensProvider } from "./pdmCodeLens";
 import { PdmScriptsTreeDataProvider } from "./pdmView";
@@ -59,19 +58,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   registerHoverProvider(context);
 
-  context.subscriptions.push(vscode.commands.registerCommand(Commands.runSelectedScript, runSelectedScript));
-
   if (await hasPyprojectToml()) {
     setContextKey(vscode.commands, ContextKey.showScriptExplorer, true);
   }
 
   context.subscriptions.push(
-    registerCommand(vscode.commands, Commands.runScriptFromFolder, (args: vscode.Uri | vscode.Uri[]) => {
-      return selectAndRunScriptFromFolder(context, args);
-    }),
-    registerCommand(vscode.commands, Commands.runScriptFromFile, (args: vscode.Uri | vscode.Uri[]) => {
-      return selectAndRunScriptFromFile(context, args);
-    }),
     registerCommand(vscode.commands, Commands.PdmRefresh, invalidateScriptCaches),
     registerCommand(vscode.commands, Commands.PdmPackageManager, (args) => {
       if (args instanceof vscode.Uri) {

@@ -34,6 +34,7 @@ export interface ICommandTypes {
   [Commands.PdmRefresh](echo?: boolean): void;
   [Commands.runScriptFromFile](args: any): void;
   [Commands.runScriptFromFolder](args: any): void;
+  [Commands.runSelectedScript](): void;
 }
 
 export const enum Configuration {

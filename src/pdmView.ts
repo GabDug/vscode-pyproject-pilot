@@ -5,7 +5,6 @@
 
 import * as path from "path";
 
-import { Commands, Configuration, readConfig, registerCommand } from "./common";
 import {
   Event,
   EventEmitter,
@@ -31,8 +30,8 @@ import {
   window,
   workspace,
 } from "vscode";
+import { Commands, Configuration, readConfig, registerCommand } from "./common";
 import {
-  INSTALL_SCRIPT,
   IPdmTaskDefinition,
   ITaskWithLocation,
   PdmTaskProvider,
@@ -44,9 +43,8 @@ import {
   startDebugging,
 } from "./tasks";
 
-import { ExplorerCommands } from "./common";
+import { ExplorerCommands, pyprojectName } from "./common";
 import { printChannelOutput } from "./extension";
-import { pyprojectName } from "./common";
 import { readPyproject } from "./readPyproject";
 
 class Folder extends TreeItem {
@@ -108,10 +106,7 @@ export class PdmScript extends TreeItem {
         : task.task.name;
     super(name, TreeItemCollapsibleState.None);
     this.taskLocation = task.location;
-    const command: ExplorerCommands =
-      name === `${INSTALL_SCRIPT} ` || name === "build "
-        ? "run"
-        : readConfig(workspace, Configuration.scriptExplorerAction) ?? "open";
+    const command: ExplorerCommands = readConfig(workspace, Configuration.scriptExplorerAction) ?? "open";
 
     const commandList = {
       open: {
@@ -233,8 +228,8 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     }
     const task = await createTask(
       await getPackageManager(this.context, selection.folder.workspaceFolder.uri, true),
-      INSTALL_SCRIPT,
-      [INSTALL_SCRIPT],
+      "install",
+      ["install"],
       selection.folder.workspaceFolder,
       uri,
       undefined,
@@ -322,11 +317,6 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     return [];
   }
 
-  private isInstallTask(task: Task): boolean {
-    const fullName = getTaskName("install", task.definition.path);
-    return fullName === task.name;
-  }
-
   private getTaskTreeItemLabel(taskTreeLabel: string | TreeItemLabel | undefined): string {
     if (taskTreeLabel === undefined) {
       return "";
@@ -378,10 +368,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
         return;
       }
 
-      if (
-        isWorkspaceFolder(each.task.scope) // &&
-        // !this.isInstallTask(each.task)
-      ) {
+      if (isWorkspaceFolder(each.task.scope)) {
         folder = folders.get(each.task.scope.name);
         if (!folder) {
           folder = new Folder(each.task.scope);
@@ -399,11 +386,6 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
         const script = new PdmScript(this.extensionContext, pyprojectToml, each);
         printChannelOutput(script);
         pyprojectToml.addScript(script);
-      } else {
-        console.log("No workspace folder found");
-        console.log(each);
-        console.log(each.task);
-        console.log(each.task.scope);
       }
     });
 

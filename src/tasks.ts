@@ -54,8 +54,6 @@ export interface IFolderTaskItem extends QuickPickItem {
 
 let cachedTasks: ITaskWithLocation[] | undefined = undefined;
 
-export const INSTALL_SCRIPT = "install";
-
 export interface ITaskLocation {
   document: Uri;
   line: Position;
@@ -98,9 +96,6 @@ export class PdmTaskProvider implements TaskProvider {
         });
       }
       const cmd = [kind.script];
-      if (kind.script !== INSTALL_SCRIPT && kind.script !== "build") {
-        cmd.unshift("run");
-      }
       return createTask(
         await getPackageManager(this.context, _task.scope.uri),
         kind,
@@ -339,34 +334,6 @@ export async function providePdmScriptsForPyprojectToml(
     });
   }
 
-  if (
-    !(readConfig(workspace, Configuration.scriptExplorerExclude, folder) ?? []).find((e) => e.includes(INSTALL_SCRIPT))
-  ) {
-    result.push({
-      task: await createTask(
-        packageManager,
-        INSTALL_SCRIPT,
-        [INSTALL_SCRIPT],
-        folder,
-        pyprojectTomlUri,
-        "install dependencies from package",
-        []
-      ),
-    });
-    if (pyprojectInfo?.build) {
-      result.push({
-        task: await createTask(
-          packageManager,
-          "build",
-          ["build"],
-          folder,
-          pyprojectTomlUri,
-          `build package with ${pyprojectInfo.build.build_backend}`,
-          []
-        ),
-      });
-    }
-  }
   return result;
 }
 
