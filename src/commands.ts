@@ -21,11 +21,7 @@ export function runSelectedScript(context: vscode.ExtensionContext) {
   }
   const document = editor.document;
   const contents = document.getText();
-  const script = findScriptAtPosition(
-    editor.document,
-    contents,
-    editor.selection.anchor
-  );
+  const script = findScriptAtPosition(editor.document, contents, editor.selection.anchor);
   if (script) {
     runScript(context, script, document);
   } else {
@@ -36,16 +32,12 @@ export function runSelectedScript(context: vscode.ExtensionContext) {
 
 export async function selectAndRunScriptFromFile(
   context: vscode.ExtensionContext,
-  selectedPath: vscode.Uri | vscode.Uri[]
+  selectedPath: vscode.Uri | vscode.Uri[],
 ) {
   if (Array.isArray(selectedPath)) {
     selectedPath = selectedPath[0];
   }
-  const taskList: ITaskWithLocation[] = await providePdmScriptsForPyprojectToml(
-    context,
-    selectedPath,
-    true
-  );
+  const taskList: ITaskWithLocation[] = await providePdmScriptsForPyprojectToml(context, selectedPath, true);
 
   const itemList: IFolderTaskItem[] = taskList.map((task) => {
     return {
@@ -61,7 +53,7 @@ export async function selectAndRunScriptFromFile(
 }
 export async function selectAndRunScriptFromFolder(
   context: vscode.ExtensionContext,
-  selectedFolders: vscode.Uri[] | vscode.Uri
+  selectedFolders: vscode.Uri[] | vscode.Uri,
 ) {
   // XXX(GabDug): support multiple folders selected (deduplicated)
   let selectedFolder: vscode.Uri;
@@ -72,22 +64,16 @@ export async function selectAndRunScriptFromFolder(
     selectedFolder = selectedFolders[0];
     if (selectedFolders?.length > 1) {
       vscode.window.showInformationMessage(
-        `Only one folder can be selected at a time. While proceeding, only the first folder will be used: ${selectedFolder.fsPath}`
+        `Only one folder can be selected at a time. While proceeding, only the first folder will be used: ${selectedFolder.fsPath}`,
       );
     }
   } else {
     selectedFolder = selectedFolders;
   }
-  const taskList: IFolderTaskItem[] = await detectPdmScriptsForFolder(
-    context,
-    selectedFolder
-  );
+  const taskList: IFolderTaskItem[] = await detectPdmScriptsForFolder(context, selectedFolder);
   await createTaskQuickList(taskList, selectedFolder);
 }
-async function createTaskQuickList(
-  taskList: IFolderTaskItem[],
-  selectedPath: vscode.Uri
-) {
+async function createTaskQuickList(taskList: IFolderTaskItem[], selectedPath: vscode.Uri) {
   if (taskList && taskList.length > 0) {
     const quickPick = vscode.window.createQuickPick<IFolderTaskItem>();
     quickPick.placeholder = "Select a PDM script to run";
@@ -100,13 +86,13 @@ async function createTaskQuickList(
         quickPick.onDidAccept(() => {
           toDispose.forEach((d) => d.dispose());
           c(quickPick.selectedItems[0]);
-        })
+        }),
       );
       toDispose.push(
         quickPick.onDidHide(() => {
           toDispose.forEach((d) => d.dispose());
           c(undefined);
-        })
+        }),
       );
     });
     quickPick.show();
@@ -116,9 +102,6 @@ async function createTaskQuickList(
       vscode.tasks.executeTask(result.task);
     }
   } else {
-    vscode.window.showInformationMessage(
-      `No pdm scripts found in ${selectedPath.fsPath}`,
-      { modal: true }
-    );
+    vscode.window.showInformationMessage(`No pdm scripts found in ${selectedPath.fsPath}`, { modal: true });
   }
 }

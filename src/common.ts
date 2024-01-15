@@ -24,14 +24,8 @@ export const enum Commands {
 }
 
 export interface ICommandTypes {
-  [Commands.PdmRunScriptFromHover](args: {
-    script: string;
-    documentUri: Uri;
-  }): void;
-  [Commands.PdmDebugScriptFromHover](args: {
-    script: string;
-    documentUri: Uri;
-  }): void;
+  [Commands.PdmRunScriptFromHover](args: { script: string; documentUri: Uri }): void;
+  [Commands.PdmDebugScriptFromHover](args: { script: string; documentUri: Uri }): void;
   [Commands.runScript](script: PdmScript): void;
   [Commands.debugScript](script: PdmScript): void;
   [Commands.openScript](selection: PdmScript | PyprojectTOML): void;
@@ -93,13 +87,13 @@ export interface IContextKeyTypes {
 export const readConfig = <K extends keyof IConfigurationTypes>(
   wsp: typeof workspace,
   key: K,
-  folder?: ConfigurationScope
+  folder?: ConfigurationScope,
 ) => wsp.getConfiguration(undefined, folder).get<IConfigurationTypes[K]>(key);
 
 export const setContextKey = async <K extends keyof IContextKeyTypes>(
   ns: typeof commands,
   key: K,
-  value: IContextKeyTypes[K] | null
+  value: IContextKeyTypes[K] | null,
 ) => await ns.executeCommand("setContext", key, value);
 
 /**
@@ -108,10 +102,8 @@ export const setContextKey = async <K extends keyof IContextKeyTypes>(
 export const registerCommand = <K extends keyof ICommandTypes>(
   ns: typeof commands,
   key: K,
-  fn: (
-    ...args: Parameters<ICommandTypes[K]>
-  ) => Thenable<ReturnType<ICommandTypes[K]>>,
-  thisArg?: any
+  fn: (...args: Parameters<ICommandTypes[K]>) => Thenable<ReturnType<ICommandTypes[K]>>,
+  thisArg?: any,
 ) => ns.registerCommand(key, fn, thisArg);
 
 /**
@@ -121,8 +113,7 @@ export const runCommand = async <K extends keyof ICommandTypes>(
   ns: typeof commands,
   key: K,
   ...args: Parameters<ICommandTypes[K]>
-): Promise<ReturnType<ICommandTypes[K]>> =>
-  await ns.executeCommand(key, ...args);
+): Promise<ReturnType<ICommandTypes[K]>> => await ns.executeCommand(key, ...args);
 
 export const asCommand = <K extends keyof ICommandTypes>(command: {
   title: string;

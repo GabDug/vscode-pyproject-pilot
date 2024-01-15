@@ -33,15 +33,12 @@
     "lint:fix": "eslint -c .eslintrc.js --ext .ts . --fix",
     "pretest": "npm run test-compile && npm install",
     "prettier": "prettier --write '**/*.{ts,json,md,hbs,yml,js}'",
-    "_test-compile": "npm run clean && tsc -p ./ && npm run webpack && cp -r ./src/worker ./out",
     "test-compile": "npm run clean && tsc -p ./ && npm run webpack",
     "test": "node ./out/test/runTest.js",
-    "version": "node ./scripts/version.js && git add CHANGELOG.md",
     "vscode:prepublish": "webpack --mode production",
     "watch": "tsc --watch -p ./",
     "webpack-dev": "webpack --mode development --watch",
-    "webpack": "webpack --mode development",
-    "vscodetest": "npm run test-compile && vscode-test"
+    "webpack": "webpack --mode development"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
@@ -52,20 +49,18 @@
     "@types/webpack-env": "^1.18.4",
     "@typescript-eslint/eslint-plugin": "^6.18.1",
     "@typescript-eslint/parser": "^6.18.1",
-    "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
     "eslint": "^8.56.0",
     "glob": "^10.3.10",
     "nyc": "^15.1.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^4.0.2",
+    "typescript": "^5.0.2",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "@vscode/vsce": "^2.22.0",
     "minimatch": "^9.0.3",
-    "process": "^0.11.10",
     "toml-eslint-parser": "^0.9.3",
     "vscode-uri": "^3.0.8"
   },
