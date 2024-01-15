@@ -9,3 +9,5 @@ node_modules
 .vscode-test
 .vscode-test-web
 dist
+.nyc_output
+coverage

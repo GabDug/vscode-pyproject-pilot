@@ -37,13 +37,11 @@ watch = {call = "foo_package.bar_module:main"}
 name = "test"
 version = "0.0.1a1"
 description = ""
-authors = [
-    {name = "Gabriel Dugny", email = "git@dugny.me"},
-]
+authors = [{ name = "Gabriel Dugny", email = "git@dugny.me" }]
 dependencies = []
 requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 
 [project.scripts]
 test-script = "abc.main:main"

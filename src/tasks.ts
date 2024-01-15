@@ -375,7 +375,8 @@ export async function providePdmScriptsForPyprojectToml(
   if (!folder) {
     return emptyTasks;
   }
-  const scripts = await getScripts(pyprojectTomlUri);
+  const pyprojectInfo = await getScripts(pyprojectTomlUri);
+  const scripts = pyprojectInfo?.scripts;
   if (!scripts) {
     return emptyTasks;
   }
@@ -658,5 +659,5 @@ export async function getScripts(pyprojectTomlUri: Uri) {
   const document: TextDocument = await workspace.openTextDocument(
     pyprojectTomlUri
   );
-  return readPyproject(document)?.scripts;
+  return readPyproject(document);
 }

@@ -46,7 +46,7 @@ The extension supports running a script as a task from a folder in the Explorer.
 This extension should support multi-root workspaces, and will run scripts in the folder of the file that is currently active.
 
 > [!NOTE]
-> This extension won't be active if your only open a file. YOu must always open a folder or workspace.
+> This extension won't be active if your only open a file. You must always open a folder or workspace.
 
 
 ## Settings

@@ -1,30 +1,63 @@
-// Imports mocha for the browser, defining the `mocha` global.
-require("mocha/mocha");
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
 
-export function run(): Promise<void> {
-  return new Promise((c, e) => {
-    mocha.setup({
-      ui: "tdd",
-      reporter: undefined,
-    });
+import * as Mocha from "mocha";
 
-    // Bundles all files in the current directory matching `*.test`
-    const importAll = (r: __WebpackModuleApi.RequireContext) =>
-      r.keys().forEach(r);
-    importAll(require.context(".", true, /\.test$/));
+import { join, resolve } from "path";
 
-    try {
-      // Run the mocha test
-      mocha.run((failures) => {
-        if (failures > 0) {
-          e(new Error(`${failures} tests failed.`));
-        } else {
-          c();
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      e(err);
-    }
+import { glob } from "glob";
+import { MochaOptions } from "mocha";
+
+function setupCoverage() {
+  const NYC = require("nyc");
+  // XXX NYC is picking up coverage for our node_modules
+  const nyc = new NYC({
+    cwd: join(__dirname, "..", "..", ".."),
+    exclude: ["**/test/**", ".vscode-test/**", "**/node_modules/**/*"],
+    reporter: ["text", "html"],
+    extension: [".ts"],
+    all: true,
+    instrument: true,
+    hookRequire: true,
+    hookRunInContext: true,
+    hookRunInThisContext: true,
   });
+
+  nyc.reset();
+  nyc.wrap();
+
+  return nyc;
+}
+
+export async function run(): Promise<void> {
+  const nyc = process.env.COVERAGE ? setupCoverage() : null;
+
+  const mochaOpts: MochaOptions = {
+    timeout: 10 * 1000,
+    ui: "tdd",
+    color: true,
+    ...JSON.parse(process.env.MOCHA_TEST_OPTIONS ?? "{}"),
+  };
+
+  const runner = new Mocha(mochaOpts);
+  const testsRoot = resolve(__dirname, "..");
+
+  const files = await glob("**/**.test.js", { cwd: testsRoot });
+  files.forEach((f) => runner.addFile(resolve(testsRoot, f)));
+
+  try {
+    await new Promise((resolve, reject) =>
+      runner.run((failures: any) =>
+        failures
+          ? reject(new Error(`${failures} tests failed`))
+          : resolve(undefined)
+      )
+    );
+  } finally {
+    if (nyc) {
+      nyc.writeCoverageFile();
+      await nyc.report();
+    }
+  }
 }

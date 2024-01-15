@@ -28,7 +28,7 @@ suite("Open Pyproject Test", () => {
     // SHow explorer panel "PDM Scripts"
 
     // Sleep 10 seconds (with mocha)
-    await new Promise((resolve) => setTimeout(resolve, 100000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Check we have the "PDM Scripts" explorer panel
     // assert.strictEqual(1, 2);
