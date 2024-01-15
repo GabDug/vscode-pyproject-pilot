@@ -309,7 +309,7 @@ export function readPdmPlugins(document: TextDocument, ast: AST.TOMLProgram, par
 export function readBuildSystem(
   document: TextDocument,
   ast: AST.TOMLProgram,
-  parsed: any
+  parsed: any,
 ): undefined | IPyprojectBuildInfo {
   /**
    * Only supports table style build-system

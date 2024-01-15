@@ -8,6 +8,7 @@ import type { PdmScript, PyprojectTOML } from "./pdmView";
 
 export const enum Commands {
   // Extension
+  runCommand = "pdm.runCommand",
   runSelectedScript = "pdm.runSelectedScript",
   runScriptFromFolder = "pdm.runScriptFromFolder",
   runScriptFromFile = "pdm.runScriptFromFile",
@@ -35,6 +36,7 @@ export interface ICommandTypes {
   [Commands.runScriptFromFile](args: any): void;
   [Commands.runScriptFromFolder](args: any): void;
   [Commands.runSelectedScript](): void;
+  [Commands.runCommand](pyprojectTomlUri: Uri, command: string, args?: string[]): void;
 }
 
 export const enum Configuration {
@@ -89,13 +91,13 @@ export interface IContextKeyTypes {
 export const readConfig = <K extends keyof IConfigurationTypes>(
   wsp: typeof workspace,
   key: K,
-  folder?: ConfigurationScope
+  folder?: ConfigurationScope,
 ) => wsp.getConfiguration(undefined, folder).get<IConfigurationTypes[K]>(key);
 
 export const setContextKey = async <K extends keyof IContextKeyTypes>(
   ns: typeof commands,
   key: K,
-  value: IContextKeyTypes[K] | null
+  value: IContextKeyTypes[K] | null,
 ) => await ns.executeCommand("setContext", key, value);
 
 /**
@@ -105,7 +107,7 @@ export const registerCommand = <K extends keyof ICommandTypes>(
   ns: typeof commands,
   key: K,
   fn: (...args: Parameters<ICommandTypes[K]>) => Thenable<ReturnType<ICommandTypes[K]>>,
-  thisArg?: any
+  thisArg?: any,
 ) => ns.registerCommand(key, fn, thisArg);
 
 /**

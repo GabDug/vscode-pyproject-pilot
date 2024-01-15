@@ -25,14 +25,15 @@
   "preview": true,
   "pricing": "Free",
   "prettier": {
-    "printWidth": 120
+    "printWidth": 120,
+    "trailingComma": "all"
   },
   "scripts": {
     "clean": "node ./scripts/clean.js",
     "lint": "eslint -c .eslintrc.js --ext .ts .",
     "lint:fix": "eslint -c .eslintrc.js --ext .ts . --fix",
     "pretest": "npm run test-compile && npm install",
-    "prettier": "prettier --write '**/*.{ts,json,md,hbs,yml,js}'",
+    "prettier": "prettier --write '**/*.{ts,json,yml,js}'",
     "test-compile": "npm run clean && tsc -p ./ && npm run webpack",
     "test": "node ./out/test/runTest.js",
     "vscode:prepublish": "webpack --mode production",
@@ -119,6 +120,11 @@
       {
         "command": "pdm.runInstall",
         "title": "Install deps - pdm install",
+        "category": "PDM"
+      },
+      {
+        "command": "pdm.runCommand",
+        "title": "Run a PDm command",
         "category": "PDM"
       },
       {

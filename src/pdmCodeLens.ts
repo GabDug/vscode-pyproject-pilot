@@ -60,8 +60,8 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
           pattern: "**/{pyproject.toml,*.pyproject.toml}",
           scheme: "file",
         },
-        this
-      )
+        this,
+      ),
     );
   }
 
@@ -95,10 +95,10 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
         pyproject.build.location.range,
         asCommand({
           title: "$(debug-start) " + "Build package",
-          command: Commands.runScriptFromFile,
-          arguments: [document.uri],
-        })
-      )
+          command: Commands.runCommand,
+          arguments: [document.uri, "build"],
+        }),
+      ),
     );
   }
 
@@ -109,27 +109,16 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     if (!pyproject.plugins) {
       return;
     }
+    const txt = "Install plugin" + (pyproject.plugins.plugins.length > 1 ? "s" : "");
     codeLenses.push(
       new CodeLens(
         pyproject.plugins.location.range,
-        // asCommand({
-        //   // XXX Pluralize
-        //   title: "$(debug-start) " + "Install PDM plugins",
-        //   command: Commands.runScriptFromFile,
-        //   arguments: [document.uri],
-        // })
         asCommand({
-          title: "$(debug-start) " + "Install PDM plugins",
-          command: Commands.PdmRunScriptFromHover,
-          tooltip: "Run the script as a task",
-          arguments: [
-            {
-              documentUri: document.uri,
-              script: "install_plugins",
-            },
-          ],
-        })
-      )
+          title: "$(debug-start) " + txt,
+          command: Commands.runCommand,
+          arguments: [document.uri, "install", ["install", "--plugins"]],
+        }),
+      ),
     );
   }
 
@@ -143,19 +132,20 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
       return [];
     }
 
-    const title = "$(debug-start) " + "Run script";
     if (this.scriptsLensLocation === "top") {
       printChannelOutput(workspace.getWorkspaceFolder(document.uri));
       printChannelOutput(document.uri);
+
       codeLenses.push(
         new CodeLens(
           scripts_tokens.location.range,
           asCommand({
-            title,
+            title: "$(debug-start) Run script...",
+            tooltip: "Select a script and run it as a task",
             command: Commands.runScriptFromFile,
             arguments: [document.uri],
-          })
-        )
+          }),
+        ),
       );
     } else if (this.scriptsLensLocation === "all") {
       codeLenses.push(
@@ -164,7 +154,7 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
             new CodeLens(
               nameRange,
               asCommand({
-                title,
+                title: "$(debug-start) Run script",
                 command: Commands.PdmRunScriptFromHover,
                 tooltip: "Run the script as a task",
                 arguments: [
@@ -173,9 +163,9 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
                     script: name,
                   },
                 ],
-              })
-            )
-        )
+              }),
+            ),
+        ),
       );
     }
   }

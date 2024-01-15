@@ -9,6 +9,7 @@ import { Commands, Configuration, ContextKey, registerCommand, setContextKey } f
 import { PdmScriptHoverProvider, invalidateHoverScriptsCache } from "./scriptHover";
 import { PdmTaskProvider, getPackageManager, hasPyprojectToml, invalidateTasksCache } from "./tasks";
 
+import { CommandsProvider } from "./commands";
 import { PdmScriptLensProvider } from "./pdmCodeLens";
 import { PdmScriptsTreeDataProvider } from "./pdmView";
 
@@ -53,7 +54,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           treeDataProvider.refresh();
         }
       }
-    })
+    }),
   );
 
   registerHoverProvider(context);
@@ -71,9 +72,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       return Promise.resolve("");
     }),
-    // FIXME There should not be codelens when opening a file (not workspace)
-    new PdmScriptLensProvider(context)
   );
+  registerCodeLensProvider(context);
+  new CommandsProvider(context);
 }
 
 let taskProvider: PdmTaskProvider;
@@ -121,6 +122,12 @@ function registerHoverProvider(context: vscode.ExtensionContext): PdmScriptHover
   return undefined;
 }
 
+function registerCodeLensProvider(context: vscode.ExtensionContext): undefined {
+  if (vscode.workspace.workspaceFolders) {
+    const provider = new PdmScriptLensProvider(context);
+    context.subscriptions.push(provider);
+  }
+}
 /**
  * Prints the given content on the output channel.
  *

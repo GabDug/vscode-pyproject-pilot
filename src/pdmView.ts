@@ -30,7 +30,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { Commands, Configuration, readConfig, registerCommand } from "./common";
+import { Commands, Configuration, ExplorerCommands, pyprojectName, readConfig, registerCommand } from "./common";
 import {
   IPdmTaskDefinition,
   ITaskWithLocation,
@@ -43,7 +43,6 @@ import {
   startDebugging,
 } from "./tasks";
 
-import { ExplorerCommands, pyprojectName } from "./common";
 import { printChannelOutput } from "./extension";
 import { readPyproject } from "./readPyproject";
 
@@ -178,14 +177,17 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private _onDidChangeTreeData: EventEmitter<TreeItem | null> = new EventEmitter<TreeItem | null>();
   readonly onDidChangeTreeData: Event<TreeItem | null> = this._onDidChangeTreeData.event;
 
-  constructor(private context: ExtensionContext, public taskProvider: PdmTaskProvider) {
+  constructor(
+    private context: ExtensionContext,
+    public taskProvider: PdmTaskProvider,
+  ) {
     this.extensionContext = context;
 
     context.subscriptions.push(
       registerCommand(commands, Commands.runScript, this.runScript, this),
       registerCommand(commands, Commands.debugScript, this.debugScript, this),
       registerCommand(commands, Commands.openScript, this.openScript, this),
-      registerCommand(commands, Commands.runInstall, this.runInstall, this)
+      registerCommand(commands, Commands.runInstall, this.runInstall, this),
     );
   }
 
@@ -200,7 +202,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       this.extensionContext,
       script.task.definition.script,
       path.dirname(script.package.resourceUri!.fsPath),
-      script.getFolder()
+      script.getFolder(),
     );
   }
 
@@ -226,6 +228,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     if (!uri) {
       return;
     }
+    // Fixme replace by call to pdm.runCommand
     const task = await createTask(
       await getPackageManager(this.context, selection.folder.workspaceFolder.uri, true),
       "install",
@@ -233,7 +236,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       selection.folder.workspaceFolder,
       uri,
       undefined,
-      []
+      [],
     );
     tasks.executeTask(task);
   }
@@ -351,10 +354,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       if (location && !excludeConfig.has(location.uri.toString())) {
         const regularExpressionsSetting =
           readConfig(workspace, Configuration.scriptExplorerExclude, location.uri) ?? [];
-        excludeConfig.set(
-          location.uri.toString(),
-          regularExpressionsSetting?.map((value) => RegExp(value))
-        );
+        excludeConfig.set(location.uri.toString(), regularExpressionsSetting?.map((value) => RegExp(value)));
       }
       const regularExpressions =
         location && excludeConfig.has(location.uri.toString()) ? excludeConfig.get(location.uri.toString()) : undefined;
@@ -362,7 +362,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       if (
         regularExpressions &&
         regularExpressions.some((regularExpression) =>
-          (each.task.definition as IPdmTaskDefinition).script.match(regularExpression)
+          (each.task.definition as IPdmTaskDefinition).script.match(regularExpression),
         )
       ) {
         return;

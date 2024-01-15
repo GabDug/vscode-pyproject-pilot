@@ -9,11 +9,15 @@ import { Commands, registerCommand } from "./common";
 import {
   IFolderTaskItem,
   ITaskWithLocation,
+  createTask,
   detectPdmScriptsForFolder,
   findScriptAtPosition,
+  getPackageManager,
   providePdmScriptsForPyprojectToml,
   runScript,
 } from "./tasks";
+
+import path = require("path");
 
 export class CommandsProvider {
   private extensionContext: vscode.ExtensionContext;
@@ -23,7 +27,8 @@ export class CommandsProvider {
     context.subscriptions.push(
       registerCommand(vscode.commands, Commands.runSelectedScript, this.runSelectedScript, this),
       registerCommand(vscode.commands, Commands.runScriptFromFolder, this.selectAndRunScriptFromFolder, this),
-      registerCommand(vscode.commands, Commands.runScriptFromFile, this.selectAndRunScriptFromFile, this)
+      registerCommand(vscode.commands, Commands.runScriptFromFile, this.selectAndRunScriptFromFile, this),
+      registerCommand(vscode.commands, Commands.runCommand, this.runCommand, this),
     );
   }
 
@@ -74,7 +79,7 @@ export class CommandsProvider {
       selectedFolder = selectedFolders[0];
       if (selectedFolders?.length > 1) {
         vscode.window.showInformationMessage(
-          `Only one folder can be selected at a time. While proceeding, only the first folder will be used: ${selectedFolder.fsPath}`
+          `Only one folder can be selected at a time. While proceeding, only the first folder will be used: ${selectedFolder.fsPath}`,
         );
       }
     } else {
@@ -82,6 +87,26 @@ export class CommandsProvider {
     }
     const taskList: IFolderTaskItem[] = await detectPdmScriptsForFolder(context, selectedFolder);
     await createTaskQuickList(taskList, selectedFolder);
+  }
+
+  async runCommand(pyprojectTomlUri: vscode.Uri, command: string, args?: string[]) {
+    const folder = vscode.workspace.getWorkspaceFolder(pyprojectTomlUri);
+    if (!folder) {
+      return;
+    }
+    if (!args) {
+      args = [command];
+    }
+    const task = await createTask(
+      await getPackageManager(this.context, folder.uri, true),
+      command,
+      args,
+      folder,
+      pyprojectTomlUri,
+      undefined,
+      [],
+    );
+    vscode.tasks.executeTask(task);
   }
 }
 
@@ -98,13 +123,13 @@ async function createTaskQuickList(taskList: IFolderTaskItem[], selectedPath: vs
         quickPick.onDidAccept(() => {
           toDispose.forEach((d) => d.dispose());
           c(quickPick.selectedItems[0]);
-        })
+        }),
       );
       toDispose.push(
         quickPick.onDidHide(() => {
           toDispose.forEach((d) => d.dispose());
           c(undefined);
-        })
+        }),
       );
     });
     quickPick.show();
