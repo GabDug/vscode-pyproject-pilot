@@ -10,10 +10,5 @@
     "skipLibCheck": true
   },
   "exclude": ["node_modules", ".vscode-test", "test-fixtures"],
-  "include": [
-    "src/**/*.ts",
-    "./node_modules/vscode/vscode.d.ts",
-    "./node_modules/vscode/lib/*",
-    ".eslintrc.js"
-  ]
+  "include": ["src/**/*.ts", "./node_modules/vscode/vscode.d.ts", "./node_modules/vscode/lib/*", ".eslintrc.js"]
 }

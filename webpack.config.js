@@ -28,9 +28,6 @@ const config = {
       EXTENSION_NAME: `${extensionPackage.publisher}.${extensionPackage.name}`,
       EXTENSION_VERSION: extensionPackage.version,
     }),
-    // new CopyPlugin({
-    //   patterns: [{ from: "src/worker", to: "worker" }],
-    // }),
   ],
   /* cspell: disable-next-line */
   devtool: "source-map",
@@ -51,15 +48,6 @@ const config = {
             loader: "ts-loader",
           },
         ],
-      },
-      {
-        // vscode-nls-dev loader:
-        // * rewrite nls-calls
-        // loader: "vscode-nls-dev/lib/webpack-loader",
-        // options: {
-        // eslint-disable-next-line no-undef
-        //   base: path.join(__dirname, "src"),
-        // },
       },
     ],
   },

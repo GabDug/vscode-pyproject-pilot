@@ -24,10 +24,13 @@
   ],
   "preview": true,
   "pricing": "Free",
+  "prettier": {
+    "printWidth": 120
+  },
   "scripts": {
     "clean": "node ./scripts/clean.js",
     "lint": "eslint -c .eslintrc.js --ext .ts .",
-    "lint-fix": "eslint -c .eslintrc.js --ext .ts . --fix",
+    "lint:fix": "eslint -c .eslintrc.js --ext .ts . --fix",
     "pretest": "npm run test-compile && npm install",
     "prettier": "prettier --write '**/*.{ts,json,md,hbs,yml,js}'",
     "_test-compile": "npm run clean && tsc -p ./ && npm run webpack && cp -r ./src/worker ./out",
@@ -38,46 +41,38 @@
     "watch": "tsc --watch -p ./",
     "webpack-dev": "webpack --mode development --watch",
     "webpack": "webpack --mode development",
-    "chrome": "npm run webpack && vscode-test-web --browserType=chromium --extensionDevelopmentPath=. sampleWorkspace",
     "vscodetest": "npm run test-compile && vscode-test"
   },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/eslint": "^8.56.0",
     "@types/minimatch": "^5.1.2",
-    "@types/node": "^12.12.0",
+    "@types/node": "^18.12.0",
     "@types/vscode": "^1.85.0",
     "@types/webpack-env": "^1.18.4",
     "@typescript-eslint/eslint-plugin": "^6.18.1",
     "@typescript-eslint/parser": "^6.18.1",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
-    "copy-webpack-plugin": "^11.0.0",
     "eslint": "^8.56.0",
-    "path-browserify": "^1.0.1",
+    "glob": "^10.3.10",
+    "nyc": "^15.1.0",
     "ts-loader": "^9.5.1",
     "typescript": "^4.0.2",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "@istanbuljs/nyc-config-typescript": "^1.0.2",
-    "nyc": "^15.1.0",
-    "glob": "^10.3.10"
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "fs-extra": "^11.2.0",
-    "inversify": "^6.0.2",
+    "@vscode/vsce": "^2.22.0",
     "minimatch": "^9.0.3",
     "process": "^0.11.10",
-    "reflect-metadata": "^0.2.1",
     "toml-eslint-parser": "^0.9.3",
-    "util": "^0.12.5",
     "vscode-uri": "^3.0.8"
   },
   "extensionDependencies": [
     "tamasfe.even-better-toml"
   ],
   "main": "./dist/extension",
-  "$comment": "Browser is not supported for now (needs PDM locally, Python WASM is not ready yet...)",
-  "_browser": "./dist/web-extension",
   "activationEvents": [
     "onTaskType:pdm",
     "onLanguage:toml",
