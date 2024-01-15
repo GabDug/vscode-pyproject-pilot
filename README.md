@@ -48,7 +48,6 @@ This extension should support multi-root workspaces, and will run scripts in the
 > [!NOTE]
 > This extension won't be active if your only open a file. You must always open a folder or workspace.
 
-
 ## Settings
 
 - `pdm.autoDetect` - Enable detecting scripts as tasks, the default is `on`.
@@ -57,7 +56,6 @@ This extension should support multi-root workspaces, and will run scripts in the
 - `pdm.exclude` - Glob patterns for folders that should be excluded from automatic script detection. The pattern is matched against the **absolute path** of the package.json. For example, to exclude all test folders use '\*\*/test/\*\*'.
 - `pdm.enableScriptExplorer` - Enable the explorer view for PDM scripts.
 - `pdm.scriptExplorerAction` - The default click action: `open` or `run`, the default is `open`.
-  -
 - `pdm.enableRunFromFolder` - Enable running PDM scripts from the context menu of folders in Explorer, the default is `false`.
 - `pdm.scriptCodeLens.enable` - Enable/disable the code lenses to run a script, the default is `false`.
 
@@ -69,12 +67,12 @@ This extension should support multi-root workspaces, and will run scripts in the
 
 _In no particular order. Feel free to contribute!_
 
-- [X] Setting for custom PDM interpreter path
-- [X] Support for `help` arguments in `pdm.scripts`?
+- [x] Setting for custom PDM interpreter path
+- [x] Support for `help` arguments in `pdm.scripts`?
 - Expose `pdm` commands as tasks (install, update, build, ...)
-	- [ ] build: only if `[build-system]` is set
-	- [ ] install plugins: only if `[tool.pdm.plugins]` is set
-	- update/install/sync: only if `[project.dependencies]` is set or `[tool.pdm.dev-dependencies]` is set
+  - [ ] build: only if `[build-system]` is set
+  - [ ] install plugins: only if `[tool.pdm.plugins]` is set
+  - update/install/sync: only if `[project.dependencies]` is set or `[tool.pdm.dev-dependencies]` is set
 - Expose `project.scripts` as tasks (or launch configurations?)
 - [ ] CodeLens on `plugins` to install them automatically
 - Support `poethepoet` with Poetry?
