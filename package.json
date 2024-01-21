@@ -4,9 +4,14 @@
   "description": "Task provider for PDM, a Python project manager.",
   "version": "0.0.1",
   "publisher": "gabdug",
+  "homepage": "https://github.com/gabdug/vscode-pdm",
   "repository": {
     "type": "git",
     "url": "https://github.com/gabdug/vscode-pdm"
+  },
+  "bugs": {
+    "url": "https://github.com/gabdug/vscode-pdm/issues",
+    "email": "vscode-pdm@dugny.me"
   },
   "icon": "static/pdm_icon.png",
   "engines": {
@@ -155,41 +160,6 @@
       }
     ],
     "menus": {
-      "commandPalette": [
-        {
-          "$comment": "Reload automatically on file edit. Button in file explorer `PDM scripts` if needed.",
-          "command": "pdm.refresh",
-          "when": "false"
-        },
-        {
-          "command": "pdm.runScript",
-          "when": "false"
-        },
-        {
-          "command": "pdm.debugScript",
-          "when": "false"
-        },
-        {
-          "command": "pdm.openScript",
-          "when": "false"
-        },
-        {
-          "command": "pdm.runInstall",
-          "when": "false"
-        },
-        {
-          "command": "pdm.runSelectedScript",
-          "when": "false"
-        },
-        {
-          "command": "pdm.runScriptFromFolder",
-          "when": "false"
-        },
-        {
-          "command": "pdm.packageManager",
-          "when": "false"
-        }
-      ],
       "editor/context": [
         {
           "command": "pdm.runSelectedScript",
