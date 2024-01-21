@@ -71,13 +71,9 @@
     "toml-eslint-parser": "^0.9.3",
     "vscode-uri": "^3.0.8"
   },
-  "extensionDependencies": [
-    "tamasfe.even-better-toml"
-  ],
   "main": "./dist/extension",
   "activationEvents": [
     "onTaskType:pdm",
-    "onLanguage:toml",
     "workspaceContains:pyproject.toml",
     "workspaceContains:pdm.lock"
   ],
