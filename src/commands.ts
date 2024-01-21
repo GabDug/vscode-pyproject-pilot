@@ -5,7 +5,7 @@
 
 import * as vscode from "vscode";
 
-import { Commands, registerCommand } from "./common";
+import { Commands, registerCommand } from "./common/common";
 import {
   IFolderTaskItem,
   ITaskWithLocation,
@@ -13,9 +13,11 @@ import {
   detectPdmScriptsForFolder,
   findScriptAtPosition,
   getPackageManager,
-  providePdmScriptsForPyprojectToml,
+  provideScriptsForPyprojectToml,
   runScript,
 } from "./tasks";
+
+import { IPdmScriptReference } from "./readPyproject";
 
 import path = require("path");
 
@@ -53,9 +55,14 @@ export class CommandsProvider {
     if (Array.isArray(selectedPath)) {
       selectedPath = selectedPath[0];
     }
-    const taskList: ITaskWithLocation[] = await providePdmScriptsForPyprojectToml(context, selectedPath, true);
+    const taskList: ITaskWithLocation[] = await provideScriptsForPyprojectToml(context, selectedPath, true);
+    // Filter kind
+    // @ts-ignore
+    const taskListFiltered: ITaskWithLocation<IPdmScriptReference>[] = taskList.filter((task) => {
+      return task.script?.kind === "pdm_script";
+    });
 
-    const itemList: IFolderTaskItem[] = taskList.map((task) => {
+    const itemList: IFolderTaskItem[] = taskListFiltered.map((task) => {
       return {
         label: task.task.name,
         task: task.task,

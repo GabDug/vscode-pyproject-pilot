@@ -30,7 +30,9 @@ import {
   window,
   workspace,
 } from "vscode";
-import { Commands, Configuration, ExplorerCommands, pyprojectName, readConfig, registerCommand } from "./common";
+import { Commands, Configuration, ExplorerCommands, pyprojectName, readConfig, registerCommand } from "./common/common";
+import { traceError, traceLog } from "./common/log/logging";
+import { IPdmScriptReference, IPoetryScriptReference, IProjectScriptReference, readPyproject } from "./readPyproject";
 import {
   IPdmTaskDefinition,
   ITaskWithLocation,
@@ -42,9 +44,6 @@ import {
   isWorkspaceFolder,
   startDebugging,
 } from "./tasks";
-
-import { printChannelOutput } from "./extension";
-import { readPyproject } from "./readPyproject";
 
 class Folder extends TreeItem {
   pyprojects: PyprojectTOML[] = [];
@@ -66,8 +65,8 @@ class Folder extends TreeItem {
 export class PyprojectTOML extends TreeItem {
   path: string;
   folder: Folder;
-  scripts: PdmScript[] = [];
-
+  extensionContext: ExtensionContext;
+  tasks_with_kinds: Map<string, KindPdmScripts | KindProjectScripts | KindPoetryScripts>;
   static getLabel(relativePath: string): string {
     if (relativePath.length > 0) {
       return path.join(relativePath, pyprojectName);
@@ -75,9 +74,10 @@ export class PyprojectTOML extends TreeItem {
     return pyprojectName;
   }
 
-  constructor(folder: Folder, relativePath: string) {
+  constructor(folder: Folder, relativePath: string, extension_context: ExtensionContext) {
     super(PyprojectTOML.getLabel(relativePath), TreeItemCollapsibleState.Expanded);
     this.folder = folder;
+    this.extensionContext = extension_context;
     this.path = relativePath;
     this.contextValue = "pyprojectTOML";
     if (relativePath) {
@@ -86,10 +86,61 @@ export class PyprojectTOML extends TreeItem {
       this.resourceUri = Uri.file(path.join(folder.resourceUri!.fsPath, pyprojectName));
     }
     this.iconPath = ThemeIcon.File;
+    this.tasks_with_kinds = new Map<string, KindPdmScripts | KindProjectScripts | KindPoetryScripts>();
   }
 
-  addScript(script: PdmScript) {
-    this.scripts.push(script);
+  push(script: ITaskWithLocation) {
+    const task_kind_str = script?.script?.kind;
+    if (!task_kind_str) {
+      traceError(`script ${script.task.name} has no kind!?`);
+      return;
+    }
+    let task_kind = this.tasks_with_kinds.get(task_kind_str);
+    if (!task_kind) {
+      if (script.script?.kind == "pdm_script") {
+        task_kind = new KindPdmScripts(this);
+      }
+      if (script.script?.kind == "project_script") {
+        task_kind = new KindProjectScripts(this);
+      }
+      if (script.script?.kind == "poetry_script") {
+        task_kind = new KindProjectScripts(this);
+      }
+      traceLog(script);
+      if (!task_kind) {
+        traceError(`script ${script.task.name} has no kind!?`);
+        return;
+      }
+
+      this.tasks_with_kinds.set(task_kind_str, task_kind);
+    }
+    if (script.script?.kind == "pdm_script") {
+      const script_ti = new PdmScript(this.extensionContext, this, script as ITaskWithLocation<IPdmScriptReference>);
+      traceLog(script_ti);
+
+      task_kind.push(script_ti);
+    }
+    if (script.script?.kind == "poetry_script") {
+      const script_ti = new PoetryScript(
+        this.extensionContext,
+        this,
+        script as ITaskWithLocation<IPoetryScriptReference>,
+      );
+      traceLog(script_ti);
+
+      task_kind.push(script_ti);
+    }
+    if (script.script?.kind == "project_script") {
+      const script_ti = new ProjectScript(
+        this.extensionContext,
+        this,
+        script as ITaskWithLocation<IProjectScriptReference>,
+      );
+
+      traceLog(script_ti);
+
+      task_kind.push(script_ti);
+    }
   }
 }
 
@@ -98,7 +149,7 @@ export class PdmScript extends TreeItem {
   package: PyprojectTOML;
   taskLocation?: Location;
 
-  constructor(_context: ExtensionContext, pyprojectToml: PyprojectTOML, task: ITaskWithLocation) {
+  constructor(_context: ExtensionContext, pyprojectToml: PyprojectTOML, task: ITaskWithLocation<IPdmScriptReference>) {
     const name =
       pyprojectToml.path.length > 0
         ? task.task.name.substring(0, task.task.name.length - pyprojectToml.path.length - 2)
@@ -160,6 +211,119 @@ export class PdmScript extends TreeItem {
     return this.package.folder.workspaceFolder;
   }
 }
+export class ProjectScript extends TreeItem {
+  task: Task;
+  package: PyprojectTOML;
+  taskLocation?: Location;
+
+  constructor(
+    _context: ExtensionContext,
+    pyprojectToml: PyprojectTOML,
+    task: ITaskWithLocation<IProjectScriptReference>,
+  ) {
+    const name =
+      pyprojectToml.path.length > 0
+        ? task.task.name.substring(0, task.task.name.length - pyprojectToml.path.length - 2)
+        : task.task.name;
+    super(name, TreeItemCollapsibleState.None);
+    this.taskLocation = task.location;
+    const command: ExplorerCommands = readConfig(workspace, Configuration.scriptExplorerAction) ?? "open";
+
+    const commandList = {
+      open: {
+        title: "Edit Script",
+        command: "vscode.open",
+        arguments: [
+          this.taskLocation?.uri,
+          this.taskLocation
+            ? ({
+                selection: new Range(this.taskLocation.range.start, this.taskLocation.range.end),
+              } as TextDocumentShowOptions)
+            : undefined,
+        ],
+      },
+      run: {
+        title: "Run",
+        command: Commands.runScript,
+        arguments: [this],
+        // command: "python.debugInTerminal",
+        // arguments: [Uri.file("/Users/gabriel.dugny/Sources/Forks/pdm-task-provider/sampleWorkspace/.venv/bin/sample")],
+      },
+    };
+    this.contextValue = "script";
+    this.package = pyprojectToml;
+    this.task = task.task;
+    this.command = commandList[command];
+
+    if (this.task.group && this.task.group === TaskGroup.Clean) {
+      this.iconPath = new ThemeIcon("wrench-subaction");
+    } else {
+      this.iconPath = new ThemeIcon("wrench");
+    }
+    this.description = task.script?.value ?? this.description;
+  }
+
+  getFolder(): WorkspaceFolder {
+    return this.package.folder.workspaceFolder;
+  }
+}
+
+export class PoetryScript extends TreeItem {
+  task: Task;
+  package: PyprojectTOML;
+  taskLocation?: Location;
+
+  constructor(
+    _context: ExtensionContext,
+    pyprojectToml: PyprojectTOML,
+    task: ITaskWithLocation<IPoetryScriptReference>,
+  ) {
+    const name =
+      pyprojectToml.path.length > 0
+        ? task.task.name.substring(0, task.task.name.length - pyprojectToml.path.length - 2)
+        : task.task.name;
+    super(name, TreeItemCollapsibleState.None);
+    this.taskLocation = task.location;
+    const command: ExplorerCommands = readConfig(workspace, Configuration.scriptExplorerAction) ?? "open";
+
+    const commandList = {
+      open: {
+        title: "Edit Script",
+        command: "vscode.open",
+        arguments: [
+          this.taskLocation?.uri,
+          this.taskLocation
+            ? ({
+                selection: new Range(this.taskLocation.range.start, this.taskLocation.range.end),
+              } as TextDocumentShowOptions)
+            : undefined,
+        ],
+      },
+      run: {
+        title: "Run",
+        command: Commands.runScript,
+        arguments: [this],
+        // command: "python.debugInTerminal",
+        // arguments: [Uri.file("/Users/gabriel.dugny/Sources/Forks/pdm-task-provider/sampleWorkspace/.venv/bin/sample")],
+      },
+    };
+    this.contextValue = "script";
+    this.package = pyprojectToml;
+    this.task = task.task;
+    this.command = commandList[command];
+
+    if (this.task.group && this.task.group === TaskGroup.Clean) {
+      this.iconPath = new ThemeIcon("wrench-subaction");
+    } else {
+      this.iconPath = new ThemeIcon("wrench");
+    }
+    this.description = task.script?.value ?? this.description;
+  }
+
+  getFolder(): WorkspaceFolder {
+    return this.package.folder.workspaceFolder;
+  }
+}
 
 class NoScripts extends TreeItem {
   constructor(message: string) {
@@ -169,7 +333,58 @@ class NoScripts extends TreeItem {
   }
 }
 
-type TaskTree = Folder[] | PyprojectTOML[] | NoScripts[];
+class KindPdmScripts extends TreeItem {
+  pyprojectToml: PyprojectTOML;
+  children: PdmScript[] = [];
+  constructor(pyprojectToml: PyprojectTOML) {
+    super("PDM scripts", TreeItemCollapsibleState.Expanded);
+    this.contextValue = "kind_pdm_scripts";
+    this.pyprojectToml = pyprojectToml;
+    this.iconPath = new ThemeIcon("list-tree");
+    this.tooltip = new MarkdownString(
+      "PDM scripts, defined in `[tool.pdm.scripts`].\n\n[Learn more](https://pdm-project.org/latest/usage/scripts/#pdm-scripts)",
+    );
+  }
+  push(script: PdmScript) {
+    this.children.push(script);
+  }
+}
+
+class KindProjectScripts extends TreeItem {
+  pyprojectToml: PyprojectTOML;
+  children: PdmScript[] = [];
+  constructor(pyprojectToml: PyprojectTOML) {
+    super("Project scripts", TreeItemCollapsibleState.Expanded);
+    this.contextValue = "kind_project_scripts";
+    this.pyprojectToml = pyprojectToml;
+    this.iconPath = new ThemeIcon("list-tree");
+    this.tooltip = new MarkdownString(
+      "Executable scripts, defined in `[project.scripts`].\n`[project.gui-scripts]` and `[project.entry-points`] are ignored.\n\n[Learn more](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#creating-executable-scripts)",
+    );
+  }
+  push(script: ProjectScript) {
+    this.children.push(script);
+  }
+}
+
+class KindPoetryScripts extends TreeItem {
+  pyprojectToml: PyprojectTOML;
+  children: PoetryScript[] = [];
+  constructor(pyprojectToml: PyprojectTOML) {
+    super("Poetry scripts", TreeItemCollapsibleState.Expanded);
+    this.contextValue = "kind_poetry_scripts";
+    this.pyprojectToml = pyprojectToml;
+    this.iconPath = new ThemeIcon("list-tree");
+    this.tooltip = new MarkdownString(
+      "Executable scripts, defined in `[project.scripts`].\n`[project.gui-scripts]` and `[project.entry-points`] are ignored.\n\n[Learn more](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#creating-executable-scripts)",
+    );
+  }
+  push(script: PoetryScript) {
+    this.children.push(script);
+  }
+}
+
+type TaskTree = Folder[] | PyprojectTOML[] | NoScripts[] | KindPdmScripts[];
 
 export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private taskTree: TaskTree | null = null;
@@ -177,10 +392,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private _onDidChangeTreeData: EventEmitter<TreeItem | null> = new EventEmitter<TreeItem | null>();
   readonly onDidChangeTreeData: Event<TreeItem | null> = this._onDidChangeTreeData.event;
 
-  constructor(
-    private context: ExtensionContext,
-    public taskProvider: PdmTaskProvider,
-  ) {
+  constructor(private context: ExtensionContext, public taskProvider: PdmTaskProvider) {
     this.extensionContext = context;
 
     context.subscriptions.push(
@@ -273,6 +485,9 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
     if (element instanceof Folder) {
       return null;
     }
+    if (element instanceof KindPdmScripts) {
+      return element.pyprojectToml;
+    }
     if (element instanceof PyprojectTOML) {
       return element.folder;
     }
@@ -304,8 +519,23 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       return element.pyprojects;
     }
     if (element instanceof PyprojectTOML) {
-      return element.scripts;
+      if (element.tasks_with_kinds.size === 1) {
+        // Return the element children directly
+        return element.tasks_with_kinds.values().next().value.children;
+      }
+      // List needed, not iterator
+      return [...element.tasks_with_kinds.values()];
     }
+    if (element instanceof KindPdmScripts) {
+      return element.children;
+    }
+    if (element instanceof KindProjectScripts) {
+      return element.children;
+    }
+    if (element instanceof KindPoetryScripts) {
+      return element.children;
+    }
+
     if (element instanceof PdmScript) {
       return [];
     }
@@ -342,7 +572,7 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
 
   private buildTaskTree(tasks: ITaskWithLocation[]): TaskTree {
     const folders = new Map<string, Folder>();
-    const packages = new Map<string, PyprojectTOML>();
+    const pyprojects = new Map<string, PyprojectTOML>();
 
     let folder = null;
     let pyprojectToml = null;
@@ -354,7 +584,10 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
       if (location && !excludeConfig.has(location.uri.toString())) {
         const regularExpressionsSetting =
           readConfig(workspace, Configuration.scriptExplorerExclude, location.uri) ?? [];
-        excludeConfig.set(location.uri.toString(), regularExpressionsSetting?.map((value) => RegExp(value)));
+        excludeConfig.set(
+          location.uri.toString(),
+          regularExpressionsSetting?.map((value) => RegExp(value)),
+        );
       }
       const regularExpressions =
         location && excludeConfig.has(location.uri.toString()) ? excludeConfig.get(location.uri.toString()) : undefined;
@@ -377,20 +610,19 @@ export class PdmScriptsTreeDataProvider implements TreeDataProvider<TreeItem> {
         const definition: IPdmTaskDefinition = each.task.definition as IPdmTaskDefinition;
         const relativePath = definition.path ? definition.path : "";
         const fullPath = path.join(each.task.scope.name, relativePath);
-        pyprojectToml = packages.get(fullPath);
+        pyprojectToml = pyprojects.get(fullPath);
         if (!pyprojectToml) {
-          pyprojectToml = new PyprojectTOML(folder, relativePath);
+          pyprojectToml = new PyprojectTOML(folder, relativePath, this.extensionContext);
           folder.addPyproject(pyprojectToml);
-          packages.set(fullPath, pyprojectToml);
+          pyprojects.set(fullPath, pyprojectToml);
         }
-        const script = new PdmScript(this.extensionContext, pyprojectToml, each);
-        printChannelOutput(script);
-        pyprojectToml.addScript(script);
+
+        pyprojectToml.push(each);
       }
     });
 
     if (folders.size === 1) {
-      return [...packages.values()];
+      return [...pyprojects.values()];
     }
     return [...folders.values()];
   }

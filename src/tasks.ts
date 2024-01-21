@@ -29,12 +29,13 @@ import {
   window,
   workspace,
 } from "vscode";
-import { Configuration, readConfig } from "./common";
+import { Configuration, readConfig } from "./common/common";
 import { findPreferredPM, getPackageManagerPath } from "./preferred-pm";
-import { IPdmScriptReference, readPyproject } from "./readPyproject";
+import { IPdmScriptReference, IPoetryScriptReference, IProjectScriptReference, readPyproject } from "./readPyproject";
 
 import { minimatch } from "minimatch";
 import { Utils } from "vscode-uri";
+import { traceLog } from "./common/log/logging";
 
 const excludeRegex = new RegExp("^(node_modules|.vscode-test)$", "i");
 
@@ -58,11 +59,11 @@ export interface ITaskLocation {
   document: Uri;
   line: Position;
 }
-
-export interface ITaskWithLocation {
+// T = IPdmScriptReference | IProjectScriptReference
+export interface ITaskWithLocation<T = IPdmScriptReference | IProjectScriptReference | IPoetryScriptReference> {
   task: Task;
   location?: Location;
-  script?: IPdmScriptReference;
+  script?: T;
 }
 
 export class PdmTaskProvider implements TaskProvider {
@@ -226,13 +227,23 @@ async function detectPdmScripts(context: ExtensionContext, showWarning: boolean)
         const paths = await workspace.findFiles(relativePattern, "**/{.venv,venv}/**");
         for (const path of paths) {
           if (!isExcluded(folder, path) && !visitedPyprojecttTomlFiles.has(path.fsPath)) {
-            const tasks = await providePdmScriptsForPyprojectToml(context, path, showWarning);
+            const tasks = await provideScriptsForPyprojectToml(context, path, showWarning);
             visitedPyprojecttTomlFiles.add(path.fsPath);
             allTasks.push(...tasks);
           }
         }
       }
     }
+    // allTasks.push({
+    //   task: await createTask("pdm", "install", ["install"], workspace.workspaceFolders![0], Uri.file("")),
+    //   script: {
+    //     kind: "project_script",
+    //     name: "install",
+    //     value: "pdm install",
+    //     nameRange: new Range(new Position(0, 0), new Position(0, 10)),
+    //     valueRange: new Range(new Position(0, 11), new Position(0, 20)),
+    //   },
+    // });
     return allTasks;
   } catch (error) {
     return Promise.reject(error);
@@ -252,7 +263,7 @@ export async function detectPdmScriptsForFolder(context: ExtensionContext, folde
     const visitedPackageJsonFiles = new Set<string>();
     for (const path of paths) {
       if (!visitedPackageJsonFiles.has(path.fsPath)) {
-        const tasks = await providePdmScriptsForPyprojectToml(context, path, true);
+        const tasks = await provideScriptsForPyprojectToml(context, path, true);
         visitedPackageJsonFiles.add(path.fsPath);
         folderTasks.push(...tasks.map((t) => ({ label: t.task.name, task: t.task })));
       }
@@ -287,7 +298,7 @@ function isExcluded(folder: WorkspaceFolder, pyprojectTomlUri: Uri) {
   if (exclude?.length) {
     for (const pattern of exclude) {
       if (testForExclusionPattern(pyprojectTomlFolder, pattern)) {
-        console.debug(
+        traceLog(
           `Ignored pyproject.toml file ${pyprojectTomlUri.fsPath} because it matches the exclude pattern ${pattern}`,
         );
         return true;
@@ -303,7 +314,7 @@ function isDebugScript(script: string): boolean {
   );
   return match !== null;
 }
-export async function providePdmScriptsForPyprojectToml(
+export async function provideScriptsForPyprojectToml(
   context: ExtensionContext,
   pyprojectTomlUri: Uri,
   showWarning: boolean,
@@ -315,7 +326,22 @@ export async function providePdmScriptsForPyprojectToml(
     return emptyTasks;
   }
   const pyprojectInfo = await getScripts(pyprojectTomlUri);
-  const scripts = pyprojectInfo?.scripts;
+  const pdmScripts = pyprojectInfo?.scripts;
+  const projectScripts = pyprojectInfo?.projectScripts;
+  // Merged scripts
+  const scripts: (IPdmScriptReference | IProjectScriptReference | IPoetryScriptReference)[] = (
+    pdmScripts?.scripts ?? []
+  ).concat(
+    // @ts-ignore
+    projectScripts?.projectScripts ?? [],
+  );
+
+  // Concat with poetry scripts
+  const poetryScripts = pyprojectInfo?.poetryScripts;
+  if (poetryScripts) {
+    scripts.push(...poetryScripts.poetryScripts);
+  }
+
   if (!scripts) {
     return emptyTasks;
   }
@@ -324,7 +350,7 @@ export async function providePdmScriptsForPyprojectToml(
 
   const packageManager = await getPackageManager(context, folder.uri, showWarning);
 
-  for (const script of scripts.scripts) {
+  for (const script of scripts) {
     const { name, value, nameRange } = script;
     const task = await createTask(packageManager, name, ["run", name], folder, pyprojectTomlUri, value, undefined);
     result.push({
@@ -401,16 +427,16 @@ export async function createTask(
   task.detail = scriptValue;
 
   const lowerCaseTaskName = kind.script.toLowerCase();
-  if (isBuildTask(lowerCaseTaskName)) {
-    task.group = TaskGroup.Build;
-  } else if (isTestTask(lowerCaseTaskName)) {
-    task.group = TaskGroup.Test;
-  } else if (isPrePostScript(lowerCaseTaskName)) {
-    task.group = TaskGroup.Clean; // hack: use Clean group to tag pre/post scripts
-  } else if (scriptValue && isDebugScript(scriptValue)) {
-    // todo@connor4312: all scripts are now debuggable, what is a 'debug script'?
-    task.group = TaskGroup.Rebuild; // hack: use Rebuild group to tag debug scripts
-  }
+  // if (isBuildTask(lowerCaseTaskName)) {
+  task.group = TaskGroup.Build;
+  // } else if (isTestTask(lowerCaseTaskName)) {
+  //   task.group = TaskGroup.Test;
+  // } else if (isPrePostScript(lowerCaseTaskName)) {
+  //   task.group = TaskGroup.Clean; // hack: use Clean group to tag pre/post scripts
+  // } else if (scriptValue && isDebugScript(scriptValue)) {
+  //   // todo@connor4312: all scripts are now debuggable, what is a 'debug script'?
+  //   task.group = TaskGroup.Rebuild; // hack: use Rebuild group to tag debug scripts
+  // }
   console.error(task);
   return task;
 }
@@ -517,8 +543,8 @@ export async function getScripts(pyprojectTomlUri: Uri) {
   //   return readPyproject(document)?.scripts;
   // } catch (e) {
   //   const parseError = `Pdm task detection: failed to parse the file ${pyprojectTomlUri.fsPath}`;
-  //   printChannelOutput(parseError);
-  //   printChannelOutput(e);
+  //   traceError(parseError);
+  //   traceError(e);
   //   throw new Error(parseError);
   // }
   const document: TextDocument = await workspace.openTextDocument(pyprojectTomlUri);
