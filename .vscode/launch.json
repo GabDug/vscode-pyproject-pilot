@@ -6,7 +6,8 @@
       "name": "Launch Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
+
+      "args": ["${workspaceRoot}/sampleWorkspace", "--extensionDevelopmentPath=${workspaceRoot}"],
       "sourceMaps": true,
       "outFiles": ["${workspaceRoot}/out/**/*.js"],
       "preLaunchTask": "npm: watch"
