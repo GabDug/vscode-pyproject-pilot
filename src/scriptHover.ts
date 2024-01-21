@@ -96,13 +96,9 @@ export class PdmScriptHoverProvider implements HoverProvider {
     );
   }
 
-  private createMarkdownLink(command: Command, separator?: string): string {
+  private createMarkdownLink(command: Command): string {
     const encodedArgs = encodeURIComponent(JSON.stringify(command.arguments));
-    let prefix = "";
-    if (separator) {
-      prefix = ` ${separator} `;
-    }
-    return `${prefix}[${command.title}](command:${command.command}?${encodedArgs} "${command.tooltip}")`;
+    return `[${command.title}](command:${command.command}?${encodedArgs} "${command.tooltip}")`;
   }
 
   public async runScriptFromHover(args: { script: string; documentUri: Uri }) {
