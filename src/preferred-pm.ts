@@ -9,7 +9,7 @@
 import * as path from "path";
 
 import { Uri, workspace } from "vscode";
-import { Configuration, readConfig } from "./common";
+import { Configuration, readConfig } from "./common/common";
 
 // import * as whichPM from 'which-pm';
 

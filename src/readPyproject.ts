@@ -1,9 +1,9 @@
-import { Location, Position, Range, TextDocument } from "vscode";
-import { getKeyStr, getPositionFromAst, getRangeFromAstLoc } from "./tomlUtils";
 import { getStaticTOMLValue, parseTOML } from "toml-eslint-parser";
+import { Location, Position, Range, TextDocument } from "vscode";
+import { traceError, traceLog } from "./common/log/logging";
+import { getKeyStr, getPositionFromAst, getRangeFromAstLoc } from "./tomlUtils";
 
 import type { AST } from "toml-eslint-parser";
-import { printChannelOutput } from "./extension";
 
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.

@@ -13,10 +13,8 @@ import {
   languages,
   workspace,
 } from "vscode";
-import { Commands, Configuration, asCommand, readConfig } from "./common";
+import { Commands, Configuration, asCommand, readConfig } from "./common/common";
 import { IPyProjectInfo, readPyproject } from "./readPyproject";
-
-import { printChannelOutput } from "./extension";
 
 const getFreshLensLocation = () => readConfig(workspace, Configuration.ScriptsConfigKey);
 const getFreshPluginsLocation = () => readConfig(workspace, Configuration.PluginsConfigKey);
@@ -133,9 +131,6 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     }
 
     if (this.scriptsLensLocation === "top") {
-      printChannelOutput(workspace.getWorkspaceFolder(document.uri));
-      printChannelOutput(document.uri);
-
       codeLenses.push(
         new CodeLens(
           scripts_tokens.location.range,

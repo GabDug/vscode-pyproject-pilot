@@ -5,34 +5,37 @@
 
 import * as vscode from "vscode";
 
-import { Commands, Configuration, ContextKey, registerCommand, setContextKey } from "./common";
+import { Commands, Configuration, ContextKey, registerCommand, setContextKey } from "./common/common";
 import { PdmScriptHoverProvider, invalidateHoverScriptsCache } from "./scriptHover";
 import { PdmTaskProvider, getPackageManager, hasPyprojectToml, invalidateTasksCache } from "./tasks";
+import { registerLogger, traceLog } from "./common/log/logging";
 
 import { CommandsProvider } from "./commands";
 import { PdmScriptLensProvider } from "./pdmCodeLens";
-import { PdmScriptsTreeDataProvider } from "./pdmView";
+import { PdmScriptsTreeDataProvider } from "./pdmTreeView";
 
 let treeDataProvider: PdmScriptsTreeDataProvider | undefined;
-let outputChannel: vscode.OutputChannel | undefined;
 
 async function invalidateScriptCaches(echo = true) {
-  console.debug("Invalidating script caches");
+  traceLog("Invalidating script caches...");
   invalidateHoverScriptsCache();
   invalidateTasksCache();
   if (treeDataProvider) {
-    console.debug("Refreshing treeDataProvider");
+    traceLog("Refreshing treeDataProvider...");
     treeDataProvider.refresh();
   }
   if (echo) {
     vscode.window.showInformationMessage("PDM scripts refreshed.");
   }
-  console.debug("Invalidated script caches");
+  traceLog("Invalidated script caches!");
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  outputChannel = vscode.window.createOutputChannel("PDM");
-  printChannelOutput("Extension 'pdm' is now active!");
+  // Setup logging
+  const outputChannel = vscode.window.createOutputChannel("PDM", { log: true });
+  context.subscriptions.push(outputChannel, registerLogger(outputChannel));
+  traceLog("Extension 'pdm' is now active!");
+  // XXX(GabDug): Change log level
 
   registerTaskProvider(context);
   treeDataProvider = registerExplorer(context);
@@ -127,34 +130,4 @@ function registerCodeLensProvider(context: vscode.ExtensionContext): undefined {
     const provider = new PdmScriptLensProvider(context);
     context.subscriptions.push(provider);
   }
-}
-/**
- * Prints the given content on the output channel.
- *
- * @param content The content to be printed.
- * @param reveal Whether the output channel should be revealed.
- */
-export const printChannelOutput = (content: any, reveal = false): void => {
-  // If not string, try to stringify
-  if (typeof content !== "string") {
-    try {
-      content = JSON.stringify(content, null, 2);
-    } catch (e) {
-      content = content.toString();
-    }
-  }
-  if (!outputChannel) {
-    console.error("Output channel not initialized for PDM!");
-    console.info(content);
-    return;
-  }
-  outputChannel.appendLine(`[${getTimeForLogging()}] ${content}`);
-  if (reveal) {
-    outputChannel.show(true);
-  }
-};
-
-export function getTimeForLogging(): string {
-  const date = new Date();
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}.${date.getMilliseconds()}`;
 }

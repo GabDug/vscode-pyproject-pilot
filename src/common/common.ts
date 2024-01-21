@@ -4,7 +4,7 @@
  */
 
 import { Command, ConfigurationScope, Uri, commands, workspace } from "vscode";
-import type { PdmScript, PyprojectTOML } from "./pdmView";
+import type { PdmScript, PyprojectTOML } from "../pdmTreeView";
 
 export const pyprojectName = "pyproject.toml";
 

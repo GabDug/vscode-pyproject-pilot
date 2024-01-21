@@ -18,7 +18,7 @@ import {
   tasks,
   workspace,
 } from "vscode";
-import { Commands, Configuration, asCommand, readConfig, registerCommand } from "./common";
+import { Commands, Configuration, asCommand, readConfig, registerCommand } from "./common/common";
 import { IPdmScriptInfo, readPyproject } from "./readPyproject";
 import { createTask, getPackageManager, startDebugging } from "./tasks";
 
