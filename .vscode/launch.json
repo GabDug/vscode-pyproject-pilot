@@ -9,8 +9,9 @@
 
       "args": ["${workspaceRoot}/sampleWorkspace", "--extensionDevelopmentPath=${workspaceRoot}"],
       "sourceMaps": true,
-      "outFiles": ["${workspaceRoot}/out/**/*.js"],
-      "preLaunchTask": "npm: watch"
+      "outFiles": ["${workspaceRoot}/out/**/*.js"]
+
+      // "preLaunchTask": "npm: watch"
     },
     {
       "name": "Extension Tests",

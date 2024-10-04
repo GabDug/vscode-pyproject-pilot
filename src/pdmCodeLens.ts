@@ -126,7 +126,7 @@ export class PdmScriptLensProvider implements CodeLensProvider, Disposable {
     }
 
     const scripts_tokens = project?.scripts;
-    if (!scripts_tokens) {
+    if (!scripts_tokens || scripts_tokens.scripts.length === 0) {
       return [];
     }
 

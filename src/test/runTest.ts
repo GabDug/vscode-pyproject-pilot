@@ -14,10 +14,9 @@ async function main() {
     const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
     const launchArgs: string[] = [
-      "/Users/gabriel.dugny/Sources/Forks/pdm-task-provider/pdm-task-provider.code-workspace",
+      path.resolve(__dirname, "../.."),
       // "--install-extension",
       // "tamasfe.even-better-toml",
-      // path.resolve(__dirname, "../.."),
       // https://github.com/microsoft/vscode/issues/84238
       "--no-sandbox",
       // https://github.com/microsoft/vscode-test/issues/221
@@ -28,21 +27,19 @@ async function main() {
       "--skip-release-notes",
       "--disable-workspace-trust",
     ];
-    // const launchArg= ['--no-sandbox', '--disable-updates', '--skip-welcome', '--skip-release-notes', `--extensions-dir=${extensionsDir}`, `--user-data-dir=${userDir}`, '--disable-workspace-trust']
 
     // Download VS Code, unzip it and run the integration test
     const vscodeExecutablePath = await downloadAndUnzipVSCode("insiders");
     const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
-    cp.spawnSync(cli, [...args, "--install-extension", "tamasfe.even-better-toml"], {
-      encoding: "utf-8",
-      stdio: "inherit",
-    });
+    // cp.spawnSync(cli, [...args, "--install-extension", "tamasfe.even-better-toml"], {
+    //   encoding: "utf-8",
+    //   stdio: "inherit",
+    // });
     await runTests({
       vscodeExecutablePath,
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs,
-      // version: "insiders",
     });
   } catch (err) {
     console.error("Failed to run tests");

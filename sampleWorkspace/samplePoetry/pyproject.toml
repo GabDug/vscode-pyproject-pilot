@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "samplepoetry"
+version = "0.1.0"
+description = "Sample"
+authors = ["Gabriel Dugny <git@dugny.me>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.scripts]
+testpoetry = "samplepoetry.__main__:main"
+complexpoetry = { reference = "samplepoetry.__main__:main", type = "console" }
+
+[tool.poetry.scripts.subtable]
+reference = "samplepoetry.__main__:main"
+type = "console"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

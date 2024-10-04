@@ -1,19 +1,19 @@
 {
-  "name": "pdm",
-  "displayName": "PDM",
-  "description": "Task provider for PDM, a Python project manager.",
-  "version": "0.0.1",
+  "name": "ppp",
+  "displayName": "PyProject Pilot for PDM, Poetry and more",
+  "description": "Task provider for various Python project managers, like PDM, or Poetry with Poethepoet.",
+  "version": "0.0.2",
   "publisher": "gabdug",
-  "homepage": "https://github.com/gabdug/vscode-pdm",
+  "homepage": "https://github.com/gabdug/vscode-pyproject-pilot",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gabdug/vscode-pdm"
+    "url": "https://github.com/gabdug/vscode-yproject-pilot"
   },
   "bugs": {
-    "url": "https://github.com/gabdug/vscode-pdm/issues",
-    "email": "vscode-pdm@dugny.me"
+    "url": "https://github.com/gabdug/vscode-pyproject-pilot/issues",
+    "email": "vscode-pyproject-pilot@dugny.me"
   },
-  "icon": "static/pdm_icon.png",
+  "icon": "static/ppp_circle.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -25,6 +25,7 @@
     "pdm",
     "python",
     "task provider",
+    "pyproject",
     "pyproject.toml"
   ],
   "preview": true,
@@ -51,22 +52,22 @@
     "@types/eslint": "^8.56.2",
     "@types/minimatch": "^5.1.2",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.11.2",
-    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.11.19",
+    "@types/vscode": "^1.86.0",
     "@types/webpack-env": "^1.18.4",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "@vscode/test-electron": "^2.3.8",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vscode/test-electron": "^2.3.9",
     "eslint": "^8.56.0",
     "glob": "^10.3.10",
     "nyc": "^15.1.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
+    "webpack": "^5.90.2",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@vscode/vsce": "^2.22.0",
+    "@vscode/vsce": "^2.23.0",
     "minimatch": "^9.0.3",
     "toml-eslint-parser": "^0.9.3",
     "vscode-uri": "^3.0.8"
@@ -92,11 +93,11 @@
       "explorer": [
         {
           "id": "pdm",
-          "name": "PDM Scripts",
+          "name": "Python Scripts",
           "when": "pdm:showScriptExplorer",
           "icon": "$(toml)",
           "visibility": "hidden",
-          "contextualTitle": "PDM scripts"
+          "contextualTitle": "Python Scripts"
         }
       ]
     },

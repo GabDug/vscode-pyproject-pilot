@@ -333,13 +333,13 @@ export async function provideScriptsForPyprojectToml(
     pdmScripts?.scripts ?? []
   ).concat(
     // @ts-ignore
-    projectScripts?.projectScripts ?? [],
+    projectScripts?.scripts ?? [],
   );
 
   // Concat with poetry scripts
   const poetryScripts = pyprojectInfo?.poetryScripts;
   if (poetryScripts) {
-    scripts.push(...poetryScripts.poetryScripts);
+    scripts.push(...poetryScripts.scripts);
   }
 
   if (!scripts) {

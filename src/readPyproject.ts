@@ -1,64 +1,39 @@
-import { getStaticTOMLValue, parseTOML } from "toml-eslint-parser";
+import { IInfoBase, IReferenceBase, IWithLocation, ScriptKind } from "./scripts";
 import { Location, Position, Range, TextDocument } from "vscode";
+import { getKeyStr, getPositionFromAst, getRangeFromAstLoc, getTableContent, getTableSimple } from "./tomlUtils";
+import { getStaticTOMLValue, parseTOML } from "toml-eslint-parser";
 import { traceError, traceLog } from "./common/log/logging";
-import { getKeyStr, getPositionFromAst, getRangeFromAstLoc } from "./tomlUtils";
 
 import type { AST } from "toml-eslint-parser";
 
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-
-export interface IPdmScriptReference {
-  kind: "pdm_script";
-  name: string;
-  value: string;
-  nameRange: Range;
-  valueRange: Range;
+export interface IPdmScriptReference extends IReferenceBase<ScriptKind.PdmScript> {
   help?: string;
   exec_type?: string;
 }
-export interface IProjectScriptReference {
-  kind: "project_script";
-  name: string;
-  value: string;
+export interface IProjectScriptReference extends IReferenceBase<ScriptKind.ProjectScript> {
   sub_kind?: string;
-  nameRange: Range;
-  valueRange: Range;
 }
 
-export interface IPoetryScriptReference {
-  kind: "poetry_script";
-  name: string;
-  value: string;
+export interface IPoetryScriptReference extends IReferenceBase<ScriptKind.PoetryScript> {
   sub_kind?: string;
-  nameRange: Range;
-  valueRange: Range;
 }
 
-export interface IPdmPluginInfo {
-  location: Location;
+export interface IPdmPluginInfo extends IWithLocation {
   plugins: string[];
 }
 
-export interface IPdmScriptInfo {
-  location: Location;
-  scripts: IPdmScriptReference[];
+export type IPdmScriptInfo = IInfoBase<ScriptKind.PdmScript>;
+export type IPoetryScriptInfo = IInfoBase<ScriptKind.PoetryScript>;
+export type IProjectScriptInfo = IInfoBase<ScriptKind.ProjectScript>;
+
+// Map of ScriptKind to reference
+export interface KindToReferenceMap {
+  [ScriptKind.PdmScript]: IPdmScriptReference;
+  [ScriptKind.ProjectScript]: IProjectScriptReference;
+  [ScriptKind.PoetryScript]: IPoetryScriptReference;
 }
 
-export interface IProjectScriptInfo {
-  location: Location;
-  projectScripts: IProjectScriptReference[];
-}
-
-export interface IPoetryScriptInfo {
-  location: Location;
-  poetryScripts: IPoetryScriptReference[];
-}
-
-export interface IPyprojectBuildInfo {
-  location: Location;
+export interface IPyprojectBuildInfo extends IWithLocation {
   requires?: string[];
   build_backend?: string;
 }
@@ -103,8 +78,6 @@ export function readPdmScripts(document: TextDocument, ast: AST.TOMLProgram, par
 
   const scripts: IPdmScriptReference[] = [];
   const scriptsHash: Record<string, Partial<IPdmScriptReference>> = {};
-
-  const topBodyTable = ast.body[0];
 
   // Loop over all the scripts
   const parsedScripts = parsed.tool.pdm.scripts as Map<string, unknown>;
@@ -164,27 +137,7 @@ export function readPdmScripts(document: TextDocument, ast: AST.TOMLProgram, par
   });
 
   traceLog(scriptsHash);
-  const scriptsNode = topBodyTable.body?.find((node) => {
-    if (node.type === "TOMLTable") {
-      // If resolved key is == ["tool","pdm"]
-      if (node.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()) {
-        return true;
-      }
-    }
-    return false;
-  });
-  const subScriptsNodes = topBodyTable.body?.filter((node) => {
-    if (node.type === "TOMLTable") {
-      // If resolved key is == ["tool","pdm", "scripts", *]
-      if (
-        node.resolvedKey.toString().startsWith(["tool", "pdm", "scripts"].toString()) &&
-        node.resolvedKey.length > 3
-      ) {
-        return true;
-      }
-    }
-    return false;
-  });
+  const { scriptsNode, subScriptsNodes } = getTableContent(ast, ["tool", "pdm", "scripts"]);
 
   if (!scriptsNode || !(scriptsNode.type === "TOMLTable")) {
     traceLog(`No PDM scripts found in ${document.uri.toString()}: node undefined`);
@@ -193,47 +146,53 @@ export function readPdmScripts(document: TextDocument, ast: AST.TOMLProgram, par
   start = getPositionFromAst(scriptsNode.loc.start);
   const end = getPositionFromAst(scriptsNode.loc.end);
 
-  if (scriptsNode.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()) {
-    scriptsNode.body?.forEach((script) => {
-      if (script.type !== "TOMLKeyValue") {
-        traceError("script is not TOMLKeyValue");
-        return;
-      }
+  // if (scriptsNode.resolvedKey.toString() === ["tool", "pdm", "scripts"].toString()) {
+  scriptsNode.body?.forEach((script) => {
+    if (script.type !== "TOMLKeyValue") {
+      traceError("script is not TOMLKeyValue");
+      return;
+    }
 
-      const key = getKeyStr(script.key.keys[0]);
-      if (!key) {
-        return;
-      }
+    const key = getKeyStr(script.key.keys[0]);
+    if (!key) {
+      return;
+    }
 
-      if (!scriptsHash[key]) {
-        traceError(`No script found for script ${key}`);
-        return;
-      }
-      // scriptsHash[key].name = key;
-      const sub_key_node = script.key.keys[1];
-      if (!sub_key_node) {
-        scriptsHash[key].valueRange = getRangeFromAstLoc(script.value.loc);
-        scriptsHash[key].nameRange = getRangeFromAstLoc(script.key.loc);
-        return;
-      }
+    if (!scriptsHash[key]) {
+      traceError(`No script found for script ${key}`);
+      return;
+    }
+    // scriptsHash[key].name = key;
+    const sub_key_node = script.key.keys[1];
+    if (!sub_key_node) {
+      scriptsHash[key].valueRange = getRangeFromAstLoc(script.value.loc);
+      scriptsHash[key].nameRange = getRangeFromAstLoc(script.key.loc);
+      return;
+    }
 
-      const sub_key = getKeyStr(script.key.keys[1]);
-      if (sub_key === "help" && script.value?.type === "TOMLValue" && script.value.kind === "string") {
-        scriptsHash[key].help = script.value?.value;
-        return;
-      }
-      if (sub_key === "shell" || sub_key === "cmd" || sub_key === "composite" || sub_key === "call") {
-        scriptsHash[key].exec_type = sub_key;
-        scriptsHash[key].valueRange = getRangeFromAstLoc(script.value.loc);
-        scriptsHash[key].nameRange = getRangeFromAstLoc(script.key.loc);
-        return;
-      }
-    });
-  }
+    const sub_key = getKeyStr(script.key.keys[1]);
+    if (sub_key === "help" && script.value?.type === "TOMLValue" && script.value.kind === "string") {
+      scriptsHash[key].help = script.value?.value;
+      return;
+    }
+    if (sub_key === "shell" || sub_key === "cmd" || sub_key === "composite" || sub_key === "call") {
+      scriptsHash[key].exec_type = sub_key;
+      scriptsHash[key].valueRange = getRangeFromAstLoc(script.value.loc);
+      scriptsHash[key].nameRange = getRangeFromAstLoc(script.key.loc);
+      return;
+    }
+  });
+  // }
 
   // If we have a sub table
   if (subScriptsNodes) {
     subScriptsNodes.forEach((subScriptNode) => {
+      console.error(`TOTO ${subScriptNode.type}`);
+      if (subScriptNode.type !== "TOMLTable") {
+        traceError("script is not TOMLKeyValue");
+        return;
+      }
+      // subScriptNode.body
       const key_node = subScriptNode.key.keys[3];
       const key = getKeyStr(key_node);
       if (!key || key == "_") {
@@ -260,10 +219,8 @@ export function readPdmScripts(document: TextDocument, ast: AST.TOMLProgram, par
   // Safety check: remove all tasks without a value
   // XXX(GabDug): Hide all scripts starting with underscore?
   scripts.forEach((script, index) => {
-    script.kind = "pdm_script";
-    if (script.name === "_") {
-      scripts.splice(index, 1);
-    } else if (!script.value) {
+    script.kind = ScriptKind.PdmScript;
+    if (script.name === "_" || !script.value) {
       scripts.splice(index, 1);
     }
   });
@@ -296,15 +253,7 @@ export function readPdmPlugins(document: TextDocument, ast: AST.TOMLProgram, par
     return undefined;
   }
 
-  const tool_pdm_node = ast.body[0].body?.find((node) => {
-    if (node.type === "TOMLTable") {
-      // If resolved key is == ["tool","pdm"]
-      if (node.resolvedKey.toString() === ["tool", "pdm"].toString()) {
-        return true;
-      }
-    }
-    return false;
-  }) as AST.TOMLTable | undefined;
+  const tool_pdm_node = getTableSimple(ast, ["tool", "pdm"]);
 
   const plugins_node = tool_pdm_node?.body?.find((node) => {
     if (node.type === "TOMLKeyValue") {
@@ -342,14 +291,7 @@ export function readBuildSystem(
   }
 
   const build_backend = parsed["build-system"]["build-backend"] ?? undefined;
-  const build_system_node = ast.body[0].body?.find((node) => {
-    if (node.type === "TOMLTable") {
-      if (node.resolvedKey.toString() === ["build-system"].toString()) {
-        return true;
-      }
-    }
-    return false;
-  });
+  const build_system_node = getTableSimple(ast, ["build-system"]);
   if (!build_system_node) {
     return undefined;
   }
@@ -367,9 +309,6 @@ export function readProjectScripts(
   parsed: any,
 ): IProjectScriptInfo | undefined {
   // Return the scripts in pyproject.toml project.scripts if they exists
-  // Project.scripts are key/value (str/str) pairs
-  // Projects scripts can also be defined in project.entrypoints and project.gui-scripts
-  // The key were they were defined is stored in sub_kind
 
   if (!parsed?.project?.scripts) {
     console.log(`No project scripts found in ${document.uri.toString()}`);
@@ -377,22 +316,7 @@ export function readProjectScripts(
   }
   console.log(`project scripts found in ${document.uri.toString()}`);
 
-  const project_scripts_node = ast.body[0].body?.find((node) => {
-    if (node.type === "TOMLTable") {
-      // If resolved key is == ["project","scripts"]
-      if (node.resolvedKey.toString() === ["project", "scripts"].toString()) {
-        return true;
-      }
-    }
-    return false;
-  });
-
-  if (!project_scripts_node) {
-    console.log(`No project scripts found in ${document.uri.toString()}`);
-    return undefined;
-  }
-
-  console.log(`project scripts found in ${document.uri.toString()}: ${project_scripts_node}`);
+  const project_scripts_node = getTableSimple(ast, ["project", "scripts"]);
   if (!project_scripts_node || !(project_scripts_node.type === "TOMLTable")) {
     traceLog(`No project scripts found in ${document.uri.toString()}: node undefined or table`);
     return undefined;
@@ -406,6 +330,18 @@ export function readProjectScripts(
     }
 
     if (script.value.type !== "TOMLValue") {
+      if (script.value.type !== "TOMLInlineTable") {
+        traceError("script value is not TOMLValue or TOMLInlineTable");
+        return;
+      }
+      // projectScripts.push({
+      //   kind: "project_script",
+      //   name: script.value.body.find((node) => node.type === "TOMLKeyValue")?.key.keys[0].value as string,
+      //   value: script_value,
+      //   sub_kind: "scripts",
+      //   nameRange: getRangeFromAstLoc(script_key_node),
+      //   valueRange: getRangeFromAstLoc(script_value_node),
+      // });
       return;
     }
     if (!script.value) {
@@ -430,7 +366,7 @@ export function readProjectScripts(
     const script_value = script.value.value;
 
     projectScripts.push({
-      kind: "project_script",
+      kind: ScriptKind.ProjectScript,
       name: script_key,
       value: script_value,
       sub_kind: "scripts",
@@ -439,7 +375,7 @@ export function readProjectScripts(
     });
   });
   return {
-    projectScripts: projectScripts,
+    scripts: projectScripts,
     location: new Location(document.uri, getRangeFromAstLoc(project_scripts_node.loc)),
   };
 }
@@ -519,7 +455,7 @@ export function readPoetryScripts(
     const script_value = script.value.value;
 
     poetryScripts.push({
-      kind: "poetry_script",
+      kind: ScriptKind.PoetryScript,
       name: script_key,
       value: script_value,
       sub_kind: "scripts",
@@ -529,9 +465,10 @@ export function readPoetryScripts(
   });
 
   // If empty add a dummy
+  // FIXME Remove before release duh
   if (poetryScripts.length === 0) {
     poetryScripts.push({
-      kind: "poetry_script",
+      kind: ScriptKind.PoetryScript,
       name: "Dummy",
       value: "DummyValue",
       sub_kind: "scripts",
@@ -542,7 +479,7 @@ export function readPoetryScripts(
   traceLog(`Found ${poetryScripts.length} poetry scripts in ${document.uri.toString()}`);
 
   return {
-    poetryScripts: poetryScripts,
+    scripts: poetryScripts,
     location: new Location(document.uri, getRangeFromAstLoc(poetry_scripts_node.loc)),
   };
 }

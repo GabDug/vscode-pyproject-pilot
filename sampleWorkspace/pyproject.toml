@@ -1,11 +1,13 @@
 
 
 [build-system]
-requires = ["pdm>=1.9.0"]
-build-backend = "pdm.build-backend"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
 [tool]
 [tool.pdm]
 plugins = ["sync-pre-commit-lock"]
+package-type = "library"
 
 
 [tool.pdm.scripts]
@@ -22,21 +24,27 @@ start_server_with_help.help = "Starts the server with help"
 # foobar = {call = "foo_package.bar_module:main"}
 [tool.pdm.scripts.format]
 shell = """
-    isort tox_pdm tests
-    black tox_pdm tests
+    black src
+    isort src
 """
 
 [tool.pdm.scripts."all_args_quoted"]
 composite = ["lint mypackage/", "test -v tests/"]
 
-[tool.pdm.build]
-
+[tool.pdm.dev-dependencies]
+dev = ["black>=23.12.1", "isort>=5.13.2"]
 [project]
-name = "test"
-version = "0.0.1a1"
-description = ""
+name = "sampleWorkspace"
+version = "0.1.0"
+description = "Default template for PDM package"
 authors = [{ name = "Gabriel Dugny", email = "git@dugny.me" }]
-dependencies = []
+dependencies = ["requests>=2.31.0"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
+[project.optional-dependencies]
+docs = ["mkdocs>=1.5.3"]
+
+[project.scripts]
+sample = "sampleworkspace:main"
+testos = "testos:main"

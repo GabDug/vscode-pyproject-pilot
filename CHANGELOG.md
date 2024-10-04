@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- tamasafe extension is no longer required (still recommended tho!)
+- Added support for `[project.scripts]` (executable projects scripts)
+- Reworked logging
+
+
 ## [0.0.1] - 2024-02-XX
 
 - Initial release

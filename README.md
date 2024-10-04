@@ -1,8 +1,9 @@
-# [PDM](https://marketplace.visualstudio.com/items?itemName=gabdug.pdm)
+# [PyProject Pilot - PPP](https://marketplace.visualstudio.com/items?itemName=gabdug.pdm)
 
+![PPP Logo](/static/ppp_logo.png)
 Work with PDM scripts as VS Code tasks, and run them directly from `pyproject.toml` files.
 
-You need to have [PDM Scripts](https://pdm-project.org/latest/usage/scripts/) defined in your `pyporject.toml` file for this extension to work:
+You need to have [PDM Scripts](https://pdm-project.org/latest/usage/scripts/) (`[tool.project.scripts]`) or [executable projects scripts](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#creating-executable-scripts) (`[project.scripts]`) defined in your `pyproject.toml` file for this extension to work:
 
 ```toml pyproject.toml
 [tool.pdm.scripts]
@@ -10,6 +11,9 @@ start = "flask run -p 54321"
 lint = "flake8"
 test.cmd = "pytest"
 test.help = "Launch pytest"
+
+[project.scripts]
+"my-app" = "my_app:main"
 ```
 
 ## Features
@@ -43,10 +47,13 @@ The extension supports running a script as a task from a folder in the Explorer.
 
 ### Workspace-aware
 
-This extension should support multi-root workspaces, and will run scripts in the folder of the file that is currently active.
+This extension should support [multi-root workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces), and will run scripts in the folder of the file that is currently active.
+
+Multiple `pyproject.toml` files are supported, and scripts are detected in all of them: you should be able to use this extension in a monorepo.
 
 > [!NOTE]
 > This extension won't be active if your only open a file. You must always open a folder or workspace.
+
 
 ## Settings
 
@@ -62,10 +69,15 @@ This extension should support multi-root workspaces, and will run scripts in the
 ## TODO
 
 - Clean REPO
+- Implement best practices from https://github.com/microsoft/vscode-python-tools-extension-template/blob/main/src/extension.ts
+- Load project.scripts properly
+- Show project.scripts on hover / selection?
 
 ## Next steps / ideas
 
 _In no particular order. Feel free to contribute!_
+
+### Tasks / Run
 
 - [X] Setting for custom PDM interpreter path
 - [X] Support for `help` arguments in `pdm.scripts`?
@@ -73,22 +85,42 @@ _In no particular order. Feel free to contribute!_
   - [ ] build: only if `[build-system]` is set
   - [ ] install plugins: only if `[tool.pdm.plugins]` is set
   - update/install/sync: only if `[project.dependencies]` is set or `[tool.pdm.dev-dependencies]` is set
-- Expose `project.scripts` as tasks (or launch configurations?)
-- [ ] CodeLens on `plugins` to install them automatically
+- Expose `project.scripts` as debug tasks (or launch configurations?)
+- [X] CodeLens on `plugins` to install them automatically
 - Support `poethepoet` with Poetry?
+- Improve ergonomics of the PDM Scripts Explorer
+- Choose whether to run PDM scripts as tasks, or in the terminal
+- Support dynamic project.scripts
+
+### Dependency Management
+
+- Hover information on dependencies (locked version, installed version, latest version, description...), akin to [this extension](https://marketplace.visualstudio.com/items?itemName=patrick91.python-dependencies-vscode)
+   - In `pyproject.toml`
+   - In `pdm.lock`
+   - Information pulled from lockfile
+   - Information pulled from Package Manager
+   - Information pulled from Pypi
+   - Setting to enable/disable each source (e.g. disable Pypi to avoid network requests)
+   - Goto lockfile item / go to pyproject.toml item
+   - Goto Pypi page
+   - List of transitive dependencies / dependents
+- Inlay hints on dependencies (locked/installed/latest version mismatch...)
+
+
+### QA and Misc
+
 - Writing some tests?
+  - Fix coverage
 - ~~Support for VS Code in browser?~~
 - Cache tasks/`pyproject.toml` with [workspaceState](https://code.visualstudio.com/api/references/vscode-api#ExtensionContext.workspaceState)?
 - Support `*.pyproject.toml` file pattern?
-- Support internationalization (translations)
+- Support internationalization (translations) with [@vscode-nls](https://www.npmjs.com/package/vscode-nls)
 - Exclude some pyproject.toml files from auto detection (e.g. in `venv`, `.pdm-build` folders)
-- CodeLens in lockfile (showing dependencies, dependents, ...)
-- CodeLens on dependencies in `pyproject.toml`
-- Run PDM scripts as tasks, or in the terminal
+- Add (privacy-respecting) telemetry ([lib](https://github.com/microsoft/vscode-extension-telemetry/tree/main), [implementation example](https://github.com/microsoft/vscode-python/tree/main/src/client/telemetry))
+- Dynamically generate the `package.json` VS Code Extension manifest
+- Dynamically generate the README options.
 
-## Required extensions
-
-This extension requires a language extension for TOML files to be installed.
+## Recommended extensions
 
 We recommend [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml), which will also validate `pyproject.toml` and `pdm.toml` files.
 

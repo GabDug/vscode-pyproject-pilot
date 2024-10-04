@@ -19,9 +19,9 @@ lint-pylint-strict = { shell = "pylint --django-settings-module=firefighter.sett
 lint-mypy = { shell = "mypy", help = "Run mypy type checker", env = { "ENABLE_PAGERDUTY" = "True", "ENABLE_CONFLUENCE" = "True" } }
 lint-ruff = { cmd = "ruff .", help = "Run ruff linter" }
 lint = { composite = [
-    "lint-ruff",
-    "lint-pylint",
-    "lint-mypy",
+  "lint-ruff",
+  "lint-pylint",
+  "lint-mypy",
 ], help = "Run all linters (ruff, pylint, mypy)." }
 foobar = { call = "foo_package.bar_module:main" }
 buildozer = { call = "foo_package.bar_module:main" }
@@ -41,10 +41,12 @@ name = "test"
 version = "0.0.1a1"
 description = ""
 authors = [{ name = "Gabriel Dugny", email = "git@dugny.me" }]
-dependencies = []
+dependencies = ["black"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
 
+
 [project.scripts]
 test-script = "abc.main:main"
+test-bis = "abcd.main:main"

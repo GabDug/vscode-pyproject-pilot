@@ -33,6 +33,7 @@ import {
 import { Commands, Configuration, ExplorerCommands, pyprojectName, readConfig, registerCommand } from "./common/common";
 import { traceError, traceLog } from "./common/log/logging";
 import { IPdmScriptReference, IPoetryScriptReference, IProjectScriptReference, readPyproject } from "./readPyproject";
+import { IReferenceBase, ScriptKind } from "./scripts";
 import {
   IPdmTaskDefinition,
   ITaskWithLocation,
@@ -95,17 +96,33 @@ export class PyprojectTOML extends TreeItem {
       traceError(`script ${script.task.name} has no kind!?`);
       return;
     }
+
+    interface KindMap {
+      [ScriptKind.PdmScript]: typeof KindPdmScripts;
+      [ScriptKind.ProjectScript]: typeof KindProjectScripts;
+      [ScriptKind.PoetryScript]: typeof KindPoetryScripts;
+    }
+
+    const kindMap: KindMap = {
+      [ScriptKind.PdmScript]: KindPdmScripts,
+      [ScriptKind.ProjectScript]: KindProjectScripts,
+      [ScriptKind.PoetryScript]: KindPoetryScripts,
+      // Add more entries as needed for other ScriptKind values
+    };
+
+    const scriptKind = script.script?.kind;
+    if (!scriptKind) {
+      traceError(`script ${script.task.name} has no kind!?`);
+      return;
+    }
+
     let task_kind = this.tasks_with_kinds.get(task_kind_str);
     if (!task_kind) {
-      if (script.script?.kind == "pdm_script") {
-        task_kind = new KindPdmScripts(this);
+      const TaskKind = kindMap[scriptKind];
+      if (TaskKind) {
+        task_kind = new TaskKind(this);
       }
-      if (script.script?.kind == "project_script") {
-        task_kind = new KindProjectScripts(this);
-      }
-      if (script.script?.kind == "poetry_script") {
-        task_kind = new KindProjectScripts(this);
-      }
+
       traceLog(script);
       if (!task_kind) {
         traceError(`script ${script.task.name} has no kind!?`);
@@ -114,33 +131,48 @@ export class PyprojectTOML extends TreeItem {
 
       this.tasks_with_kinds.set(task_kind_str, task_kind);
     }
-    if (script.script?.kind == "pdm_script") {
-      const script_ti = new PdmScript(this.extensionContext, this, script as ITaskWithLocation<IPdmScriptReference>);
-      traceLog(script_ti);
 
-      task_kind.push(script_ti);
-    }
-    if (script.script?.kind == "poetry_script") {
-      const script_ti = new PoetryScript(
-        this.extensionContext,
-        this,
-        script as ITaskWithLocation<IPoetryScriptReference>,
-      );
-      traceLog(script_ti);
+    const TreeKindToTreeItemMap = {
+      [ScriptKind.PdmScript]: PdmScript,
+      [ScriptKind.ProjectScript]: ProjectScript,
+      [ScriptKind.PoetryScript]: PoetryScript,
+    };
 
-      task_kind.push(script_ti);
-    }
-    if (script.script?.kind == "project_script") {
-      const script_ti = new ProjectScript(
-        this.extensionContext,
-        this,
-        script as ITaskWithLocation<IProjectScriptReference>,
-      );
+    const item_constructor = TreeKindToTreeItemMap[scriptKind];
 
-      traceLog(script_ti);
+    // if (script.script?.kind == ScriptKind.PdmScript) {
+    const script_ti = new item_constructor(
+      this.extensionContext,
+      this,
+      // @ts-ignore
+      script as ITaskWithLocation<IReferenceBase<typeof scriptKind>>,
+    );
+    // const script_ti = new PdmScript(this.extensionContext, this, script as ITaskWithLocation<IPdmScriptReference>);
+    traceLog(script_ti);
 
-      task_kind.push(script_ti);
-    }
+    task_kind.push(script_ti);
+    // }
+    // if (script.script?.kind == ScriptKind.PoetryScript) {
+    //   const script_ti = new PoetryScript(
+    //     this.extensionContext,
+    //     this,
+    //     script as ITaskWithLocation<IPoetryScriptReference>,
+    //   );
+    //   traceLog(script_ti);
+
+    //   task_kind.push(script_ti);
+    // }
+    // if (script.script?.kind == ScriptKind.ProjectScript) {
+    //   const script_ti = new ProjectScript(
+    //     this.extensionContext,
+    //     this,
+    //     script as ITaskWithLocation<IProjectScriptReference>,
+    //   );
+
+    //   traceLog(script_ti);
+
+    //   task_kind.push(script_ti);
+    // }
   }
 }
 
