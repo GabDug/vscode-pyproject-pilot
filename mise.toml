@@ -1,0 +1,4 @@
+[tools]
+node = "20"
+pdm = "2.11"
+pnpm = "9"

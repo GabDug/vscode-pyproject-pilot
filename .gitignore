@@ -1,3 +1,4 @@
+# Output, logs and dependencies
 out
 node_modules.history
 .history
@@ -11,3 +12,12 @@ node_modules
 dist
 .nyc_output
 coverage
+
+# Env
+.env
+
+# MacOS
+.DS_Store
+
+# VSCode Workspace
+*.code-workspace
