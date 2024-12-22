@@ -1,6 +1,6 @@
 # [PyProject Pilot - PPP](https://marketplace.visualstudio.com/items?itemName=gabdug.pdm)
 
-![PPP Logo](/static/ppp_logo.png)
+![PPP Logo](/static/ppp_circle.png)
 Work with PDM scripts as VS Code tasks, and run them directly from `pyproject.toml` files.
 
 You need to have [PDM Scripts](https://pdm-project.org/latest/usage/scripts/) (`[tool.project.scripts]`) or [executable projects scripts](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#creating-executable-scripts) (`[project.scripts]`) defined in your `pyproject.toml` file for this extension to work:
